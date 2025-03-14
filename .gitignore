@@ -1,0 +1,58 @@
+# Ignore Visual Studio specific files
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore user-specific settings
+*.rsuser
+
+# Ignore ASP.NET artifacts
+node_modules/
+wwwroot/
+
+# Ignore secrets and configurations
+appsettings*.json
+secrets.json
+
+# Ignore Rider / JetBrains specific files
+.idea/
+*.sln.iml
+
+# Ignore logs and generated files
+logs/
+*.log
+
+# Ignore NuGet packages
+*.nupkg
+packages/
+.nuget/
+
+# Ignore Publish artifacts
+publish/
+dist/
+
+# Ignore coverage reports
+coverage/
+*.coverage
+*.coveragexml
+
+# Ignore EF Core migrations
+Migrations/
+
+# Ignore Docker files
+**/Dockerfile
+**/.dockerignore
+
+# Ignore temporary files
+*.tmp
+*.bak
+
+# Ignore Blazor WebAssembly specific files
+wwwroot/css/app.css
+wwwroot/css/app.css.map
