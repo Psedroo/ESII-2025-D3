@@ -40,7 +40,14 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 
+builder.Services.AddScoped<UsuarioService>();
+
+var options = builder.Configuration.GetConnectionString("DefaultConnection");
+Console.WriteLine($"Conectando ao banco: {options}");
+
 var app = builder.Build();
+
+
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

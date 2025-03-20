@@ -7,8 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
-[Route("api/auth")]
+
 [ApiController]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -23,45 +24,60 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        // Validate input
-        if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        if (string.IsNullOrWhiteSpace(request.Username) || 
+            string.IsNullOrWhiteSpace(request.Email) || 
+            string.IsNullOrWhiteSpace(request.Password))
         {
+            Console.WriteLine("❌ Erro: Campos obrigatórios ausentes.");
             return BadRequest(new { message = "Username, email, and password are required" });
-        }
+        } 
 
-        // Check for existing email or username
         if (await _context.UsuariosAuth.AnyAsync(u => u.Email == request.Email))
-        {
             return BadRequest(new { message = "Email already in use" });
-        }
+
         if (await _context.UsuariosAuth.AnyAsync(u => u.Username == request.Username))
-        {
             return BadRequest(new { message = "Username already in use" });
-        }
 
-        // Generate salt and hash the password
-        using var hmac = new HMACSHA256();
-        var salt = Convert.ToBase64String(hmac.Key);
-        var passwordBytes = Encoding.UTF8.GetBytes(request.Password);
-        var hash = hmac.ComputeHash(passwordBytes);
-        var hashedPassword = Convert.ToBase64String(hash);
-
-        // Create the new user
-        var newUser = new UsuarioAuth
+        try
         {
-            Username = request.Username,
-            Email = request.Email,
-            SenhaHash = hashedPassword,
-            SenhaSalt = salt,
-            TipoUsuario = "User" // Default value; adjust as needed
-        };
+            // Criar hash da senha
+            using var hmac = new HMACSHA256();
+            var salt = Convert.ToBase64String(hmac.Key);
+            var hash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
 
-        // Save to database
-        _context.UsuariosAuth.Add(newUser);
-        await _context.SaveChangesAsync();
+            // Criar usuário
+            var newUser = new UsuarioAuth
+            {
+                Username = request.Username,
+                Email = request.Email,
+                SenhaHash = hash,
+                SenhaSalt = salt,
+                TipoUsuario = "Participante"
+            };
 
-        return Ok(new { message = "Account created successfully" });
+            _context.UsuariosAuth.Add(newUser);
+            await _context.SaveChangesAsync(); // Salvar usuário primeiro
+
+            // Criar participante vinculado ao usuário
+            var participante = new Participante
+            {
+                Nome = request.Username,
+                Contacto = "",
+                DataNascimento = DateTime.UtcNow,
+                IdUsuario = newUser.Id
+            };
+
+            _context.Participantes.Add(participante);
+            await _context.SaveChangesAsync(); // Salvar participante
+
+            return Ok(new { message = "Account created successfully" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error saving to database", error = ex.Message });
+        }
     }
+
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
