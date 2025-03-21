@@ -46,13 +46,6 @@ builder.Services.AddSwaggerGen(c =>
 var options = builder.Configuration.GetConnectionString("DefaultConnection");
 Console.WriteLine($"Conectando ao banco: {options}");
 
-// 🔹 Adicionando o Swagger
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Minha API", Version = "v1" });
-});
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -80,13 +73,6 @@ app.UseAntiforgery();
 // Enable Authentication & Authorization before mapping controllers
 app.UseAuthentication();
 app.UseAuthorization();
-
-// Enable Swagger for API documentation
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sandbox API V1");
-});
 
 // Map API Controllers
 app.MapControllers();
