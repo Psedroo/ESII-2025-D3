@@ -1,0 +1,48 @@
+﻿@page "/users"
+@inject HttpClient Http
+@rendermode InteractiveServer
+
+<PageTitle>Users</PageTitle>
+
+<h1>Users</h1>
+
+@if (users == null)
+{
+    <p>Loading users...</p>
+}
+else if (users.Length == 0)
+{
+    <p>No users found.</p>
+}
+else
+{
+    <ul>
+        @foreach (var user in users)
+        {
+            <li>@user.Username</li>
+        }
+    </ul>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger">@errorMessage</p>
+}
+
+@code {
+    UsuarioAuth[] users;
+    string errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            users = await Http.GetFromJsonAsync<UsuarioAuth[]>("api/usuario");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load users. Please try again later.";
+            Console.WriteLine($"Error fetching users: {ex.Message}");
+        }
+    }
+}
