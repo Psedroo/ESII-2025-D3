@@ -31,20 +31,20 @@ public class AuthController : ControllerBase
             Console.WriteLine("❌ Erro: Campos obrigatórios ausentes.");
             return BadRequest(new { message = "Username, email, and password are required" });
         } 
-
+    
         if (await _context.UsuariosAuth.AnyAsync(u => u.Email == request.Email))
             return BadRequest(new { message = "Email already in use" });
-
+    
         if (await _context.UsuariosAuth.AnyAsync(u => u.Username == request.Username))
             return BadRequest(new { message = "Username already in use" });
-
+    
         try
         {
             // Criar hash da senha
             using var hmac = new HMACSHA256();
             var salt = Convert.ToBase64String(hmac.Key);
             var hash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
-
+    
             // Criar usuário
             var newUser = new UsuarioAuth
             {
@@ -54,10 +54,11 @@ public class AuthController : ControllerBase
                 SenhaSalt = salt,
                 TipoUsuario = "Participante"
             };
-
+            Console.WriteLine("Olá, mundo!");
+    
             _context.UsuariosAuth.Add(newUser);
             await _context.SaveChangesAsync(); // Salvar usuário primeiro
-
+           
             // Criar participante vinculado ao usuário
             var participante = new Participante
             {
@@ -66,10 +67,10 @@ public class AuthController : ControllerBase
                 DataNascimento = DateTime.UtcNow,
                 IdUsuario = newUser.Id
             };
-
+    
             _context.Participantes.Add(participante);
             await _context.SaveChangesAsync(); // Salvar participante
-
+    
             return Ok(new { message = "Account created successfully" });
         }
         catch (Exception ex)
@@ -77,7 +78,9 @@ public class AuthController : ControllerBase
             return StatusCode(500, new { message = "Error saving to database", error = ex.Message });
         }
     }
+    
 
+    //---------------------------------------------------------------------------------------------
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -132,6 +135,21 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+    
+    // 🔹 Endpoint para obter todos os utilizadores
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UsuarioAuth>>> GetUsuarios()
+    {
+        var usuarios = await _context.UsuariosAuth.ToListAsync();
+
+        if (usuarios == null || usuarios.Count == 0)
+        {
+            return NotFound("Nenhum utilizador encontrado.");
+        }
+
+        return Ok(usuarios);
+    }
+    
 }
 
 // Request models
@@ -141,7 +159,14 @@ public class RegisterRequest
     public string Email { get; set; }
     public string Password { get; set; }
 }
-
+//-----------------
+public class CreateUsuarioRequest
+{
+    public string Username { get; set; }
+    public string Email { get; set; }
+    public string Password { get; set; }
+}
+//-----------------
 public class LoginRequest
 {
     public string Email { get; set; }
