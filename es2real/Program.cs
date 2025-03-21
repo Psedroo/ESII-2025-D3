@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Blazored.LocalStorage;
+using Microsoft.OpenApi.Models; // Adicionado para o Swagger
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,15 +46,31 @@ builder.Services.AddScoped<UsuarioService>();
 var options = builder.Configuration.GetConnectionString("DefaultConnection");
 Console.WriteLine($"Conectando ao banco: {options}");
 
+// 🔹 Adicionando o Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Minha API", Version = "v1" });
+});
+
 var app = builder.Build();
-
-
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
+}
+
+// 🔹 Ativando o Swagger (após o `if`)
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Minha API v1");
+        c.RoutePrefix = "swagger"; // URL será "/swagger"
+    });
 }
 
 app.UseHttpsRedirection();
@@ -67,7 +84,7 @@ app.UseAuthorization();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Map API Endpoints (optional)
+// Map API Endpoints
 app.MapControllers();
 
 app.Run();

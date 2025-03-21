@@ -15,6 +15,11 @@ public class UsuarioService
 
     public async Task<UsuarioAuth> RegisterUserAsync(string username, string email, string password)
     {
+        
+        Console.WriteLine(password);
+        Console.WriteLine("ola lindo");
+        // Environment.Exit(0);  // Interrompe a execução do programa
+
         try
         {
             // Secure password hashing
