@@ -19,29 +19,29 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddHttpClient("API", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:5291/"); // Altere para o endereço correto da sua API
+    client.BaseAddress = new Uri("https://localhost:44343/"); // Altere para o endereço correto da sua API
 });
 
-// Configure Authentication & JWT
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-secret-key")),
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ClockSkew = TimeSpan.Zero  // Optional: reduces JWT expiration time tolerance
-        };
-    });
+
 
 builder.Services.AddAuthorization();
-builder.Services.AddBlazoredLocalStorage(); 
+builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
-
 builder.Services.AddScoped<UsuarioService>();
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:44343/") });
+
+// Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Sandbox API",
+        Version = "v1",
+        Description = "API para a aplicação Blazor Sandbox"
+    });
+});
 
 var options = builder.Configuration.GetConnectionString("DefaultConnection");
 Console.WriteLine($"Conectando ao banco: {options}");
@@ -77,14 +77,24 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-// Enable Authentication & Authorization
+// Enable Authentication & Authorization before mapping controllers
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Enable Swagger for API documentation
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Sandbox API V1");
+});
+
+// Map API Controllers
+app.MapControllers();
+
+// Map Blazor Components
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 // Map API Endpoints
 app.MapControllers();
-
 app.Run();
