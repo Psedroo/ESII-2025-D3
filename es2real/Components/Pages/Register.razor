@@ -3,57 +3,68 @@
 
 <h3>Register</h3>
 
-<EditForm Model="@userModel" OnValidSubmit="RegisterUser" FormName="registerForm1">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    
-    <div>
+<p>Debug: Username = @userModel?.Username, Email = @userModel?.Email, Password = @userModel?.Password</p>
+
+<div class="container">
+    <EditForm Model="userModel" OnValidSubmit="RegisterUser" FormName="Register">
+        <DataAnnotationsValidator/>
+
+        <div class="form-group">
         <label>Username:</label>
-        <InputText @bind-Value="userModel.Username" />
-    </div>
+        <InputText @bind-Value="userModel.Username" required/>
+        </div>
 
-    <div>
+        <div class="form-group">
         <label>Email:</label>
-        <InputText @bind-Value="userModel.Email" />
-    </div>
+        <InputText @bind-Value="userModel.Email" required/>
+        </div>
 
-    <div>
+
+        <div class="form-group">
         <label>Password:</label>
-        <InputText type="password" @bind-Value="userModel.Password" />
-    </div>
+        <InputText type="password" @bind-Value="userModel.Password" required/>
+        </div>
+    
+        <button type="submit">Register</button>
+    </EditForm>
+</div>
 
-    <button type="submit">Register</button>
-</EditForm>
-
-@if (message is not null)
+@if (!string.IsNullOrEmpty(message))
 {
     <p>@message</p>
 }
 
-@code {
-    private UserRegistrationModel userModel = new();
-    private string message;
+@code { 
+    [SupplyParameterFromForm]
+    private UserRegistrationModel userModel { get; set; } = new(); // 🔹 Garante inicialização 
+
+    private string message = string.Empty;
+    
+    protected override void OnInitialized()
+    {
+        userModel ??= new(); // 🔹 Se ainda for null, inicializa
+    }
 
     private async Task RegisterUser()
     {
+        Console.WriteLine("RegisterUser method called."); 
+        Console.WriteLine($"Username: {userModel.Username}");
+        Console.WriteLine($"Email: {userModel.Email}");
+        Console.WriteLine($"Password: {userModel.Password}");
+        
         try
         {
             var user = await _usuarioService.RegisterUserAsync(
                 userModel.Username, userModel.Email, userModel.Password);
 
-            if (user != null)
-            {
-                message = "Registration successful!";
-            }
-            else
-            {
-                message = "Error registering user.";
-            }
+            message = user != null ? "Registration successful!" : "Error registering user.";
         }
         catch (Exception ex)
         {
             message = $"An error occurred: {ex.Message}";
         }
+
+        StateHasChanged(); // 🔹 Atualiza a UI
     }
 
     public class UserRegistrationModel

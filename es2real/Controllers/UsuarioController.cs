@@ -37,6 +37,18 @@ public class UsuarioController : ControllerBase
 
         return User;
     }
-    
+    [HttpPost]  
+    public async Task<ActionResult<UsuarioAuth>> SetUser([FromBody]UsuarioAuth usuario)
+    {
+        if (usuario == null)
+        {   
+            return BadRequest("Invalid user data.");
+        }
+
+        _context.UsuariosAuth.Add(usuario);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetUser), new { id = usuario.Id }, usuario);
+    }
     
 }
