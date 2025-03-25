@@ -1,8 +1,10 @@
 ﻿@page "/registar"
+@using System.ComponentModel.DataAnnotations
 @inject UsuarioService _usuarioService
 
 <h3>Register</h3>
 
+<<<<<<< HEAD
 <p>Debug: Username = @userModel?.Username, Email = @userModel?.Email, Password = @userModel?.Password</p>
 
 <div class="container">
@@ -10,6 +12,13 @@
         <DataAnnotationsValidator/>
 
         <div class="form-group">
+=======
+<EditForm Model="@userModel" OnSubmit="RegisterUser" FormName="registerForm1">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+>>>>>>> a8c411fd269592265956b323f4234746ea1dead5
         <label>Username:</label>
         <InputText @bind-Value="userModel.Username" required/>
         </div>
@@ -34,6 +43,7 @@
     <p>@message</p>
 }
 
+<<<<<<< HEAD
 @code { 
     [SupplyParameterFromForm]
     private UserRegistrationModel userModel { get; set; } = new(); // 🔹 Garante inicialização 
@@ -53,20 +63,68 @@
         Console.WriteLine($"Password: {userModel.Password}");
         
         try
-        {
-            var user = await _usuarioService.RegisterUserAsync(
-                userModel.Username, userModel.Email, userModel.Password);
+=======
 
-            message = user != null ? "Registration successful!" : "Error registering user.";
-        }
-        catch (Exception ex)
+@code {
+
+
+        // private UserRegistrationModel userModel = new();
+        private UserRegistrationModel userModel = new UserRegistrationModel();
+        private string message;
+
+        private async Task RegisterUser()
+>>>>>>> a8c411fd269592265956b323f4234746ea1dead5
         {
-            message = $"An error occurred: {ex.Message}";
+            Console.WriteLine("RegisterUser method called");
+            try
+            {
+                StateHasChanged();
+                Console.WriteLine($"Username: {userModel.Username}");
+                Console.WriteLine($"Email: {userModel.Email}");
+                Console.WriteLine($"Password: {userModel.Password}");
+                Console.WriteLine(userModel.Password);
+                Console.WriteLine("checkpoint 2");
+
+<<<<<<< HEAD
+            message = user != null ? "Registration successful!" : "Error registering user.";
+=======
+                var user = await _usuarioService.RegisterUserAsync(
+                    userModel.Username, userModel.Email, userModel.Password);
+
+                if (user != null)
+                {
+                    message = "Registration successful!";
+                }
+                else
+                {
+                    message = "Error registering user.";
+                }
+            }
+            catch (Exception ex)
+            {
+                message = $"An error occurred: {ex.Message}";
+            }
+>>>>>>> a8c411fd269592265956b323f4234746ea1dead5
+        }
+
+        public class UserRegistrationModel
+        {
+            // [Required(ErrorMessage = "Username is required")]
+            public string Username { get; set; } = string.Empty;
+
+            // [Required(ErrorMessage = "Email is required")]
+            // [EmailAddress(ErrorMessage = "Invalid email address")]
+            public string Email { get; set; } = string.Empty;
+
+            // [Required(ErrorMessage = "Password is required")]
+            // [MinLength(2, ErrorMessage = "Password must be at least 2 characters")]
+            public string Password { get; set; } = string.Empty;
         }
 
         StateHasChanged(); // 🔹 Atualiza a UI
     }
 
+<<<<<<< HEAD
     public class UserRegistrationModel
     {
         public string Username { get; set; } = string.Empty;
@@ -74,3 +132,5 @@
         public string Password { get; set; } = string.Empty;
     }
 }
+=======
+>>>>>>> a8c411fd269592265956b323f4234746ea1dead5
