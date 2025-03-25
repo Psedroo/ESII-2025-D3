@@ -14,24 +14,12 @@ public class UsuarioService
 
     public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password)
     {
-<<<<<<< HEAD
-        // Gerar Salt
         byte[] saltBytes = new byte[16];
         using (var rng = new RNGCryptoServiceProvider())
-=======
-        
-        Console.WriteLine(password);
-        Console.WriteLine("ola lindo");
-        // Environment.Exit(0);  // Interrompe a execução do programa
-
-        try
->>>>>>> a8c411fd269592265956b323f4234746ea1dead5
         {
             rng.GetBytes(saltBytes);
         }
         string salt = Convert.ToBase64String(saltBytes);
-
-        // Gerar Hash da Senha com o Salt
         string senhaHash = HashPassword(password, salt);
 
         var newUser = new UsuarioAuth
@@ -56,7 +44,7 @@ public class UsuarioService
     
     public async Task<UsuarioAuth?> AuthenticateUserAsync(string email, string password)
     {
-        var response = await _httpClient.GetAsync($"https://localhost:44343/api/usuario");
+        var response = await _httpClient.GetAsync("https://localhost:44343/api/usuario");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -65,8 +53,6 @@ public class UsuarioService
         }
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"API Response: {jsonResponse}");
-
         var users = JsonSerializer.Deserialize<List<UsuarioAuth>>(jsonResponse, 
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
