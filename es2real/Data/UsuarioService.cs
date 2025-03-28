@@ -12,7 +12,7 @@ public class UsuarioService
         _httpClient = httpClient;
     }
 
-    public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password)
+    public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario)
     {
         byte[] saltBytes = new byte[16];
         using (var rng = new RNGCryptoServiceProvider())
@@ -28,7 +28,7 @@ public class UsuarioService
             Email = email,
             SenhaHash = senhaHash,
             SenhaSalt = salt,
-            TipoUsuario = "Participante"
+            TipoUsuario = tipoUsuario
         };
 
         var response = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/usuario", newUser);
