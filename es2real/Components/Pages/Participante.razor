@@ -1,0 +1,30 @@
+﻿@page "/participante"
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+
+<div class="container mt-5">
+    <h2 class="text-center">Área do Participante</h2>
+
+    <div class="row mt-4 text-center">
+        <div class="col-md-4">
+            <a href="/Inscricoes" class="btn btn-primary btn-lg w-100">Inscrições</a>
+        </div>
+        <div class="col-md-4">
+            <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
+        </div>
+        <div class="col-md-4">
+            <a href="/Meus-eventos" class="btn btn-success btn-lg w-100">Meus Eventos</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+}
