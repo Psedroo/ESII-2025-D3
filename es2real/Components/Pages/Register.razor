@@ -28,6 +28,15 @@
             <label>Password:</label>
             <InputText type="password" @bind-Value="userModel.Password" required />
         </div>
+
+        <div class="form-group">
+            <label>Tipo de Utilizador:</label>
+            <InputSelect @bind-Value="userModel.TipoUsuario" class="form-control">
+                <option value="">-- Selecionar --</option>
+                <option value="Participante">Participante</option>
+                <option value="Organizador">Organizador</option>
+            </InputSelect>
+        </div>
     
         <button type="submit">Register</button>
     </EditForm>
@@ -43,7 +52,7 @@
         try
         {
             var user = await _usuarioService.RegisterUserAsync(
-                userModel.Username, userModel.Email, userModel.Password);
+                userModel.Username, userModel.Email, userModel.Password, userModel.TipoUsuario);
 
             message = user != null ? "Registration successful!" : "Error registering user.";
         }
@@ -58,5 +67,6 @@
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public string TipoUsuario { get; set; } = "Participante";
     }
 }
