@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Blazored.LocalStorage;
+using ES2Real.Data;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.OpenApi.Models; // Adicionado para o Swagger
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +32,10 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:44343/") });
+
+builder.Services.AddScoped<UserSessionService>();
+builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddAuthorizationCore();
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();

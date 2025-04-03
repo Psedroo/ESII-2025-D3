@@ -12,35 +12,77 @@ public class UsuarioService
         _httpClient = httpClient;
     }
 
-    public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario)
+    public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password)
+{
+    // Check for existing username and email separately
+    var usernameCheck = await _httpClient.GetAsync($"https://localhost:44343/api/usuario/exists?username={username}");
+    var emailCheck = await _httpClient.GetAsync($"https://localhost:44343/api/usuario/exists?email={email}");
+
+    if (usernameCheck.IsSuccessStatusCode)
     {
-        byte[] saltBytes = new byte[16];
-        using (var rng = new RNGCryptoServiceProvider())
+        bool usernameExists = await usernameCheck.Content.ReadFromJsonAsync<bool>();
+        if (usernameExists)
         {
-            rng.GetBytes(saltBytes);
+            throw new InvalidOperationException("The username is already taken.");
         }
-        string salt = Convert.ToBase64String(saltBytes);
-        string senhaHash = HashPassword(password, salt);
-
-        var newUser = new UsuarioAuth
-        {
-            Username = username,
-            Email = email,
-            SenhaHash = senhaHash,
-            SenhaSalt = salt,
-            TipoUsuario = tipoUsuario
-        };
-
-        var response = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/usuario", newUser);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            string errorMessage = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"API Error: {response.StatusCode} - {errorMessage}");
-        }
-
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<UsuarioAuth>() : null;
     }
+
+    if (emailCheck.IsSuccessStatusCode)
+    {
+        bool emailExists = await emailCheck.Content.ReadFromJsonAsync<bool>();
+        if (emailExists)
+        {
+            throw new InvalidOperationException("The email is already registered.");
+        }
+    }
+    
+    byte[] saltBytes = new byte[16];
+    using (var rng = new RNGCryptoServiceProvider())
+    {
+        rng.GetBytes(saltBytes);
+    }
+    string salt = Convert.ToBase64String(saltBytes);
+    string senhaHash = HashPassword(password, salt);
+
+    var newUser = new UsuarioAuth
+    {
+        Username = username,
+        Email = email,
+        SenhaHash = senhaHash,
+        SenhaSalt = salt,
+        TipoUsuario = "Participante"
+    };
+
+    var response = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/usuario", newUser);
+
+    if (!response.IsSuccessStatusCode)
+    {
+        string errorMessage = await response.Content.ReadAsStringAsync();
+        throw new Exception($"API Error: {response.StatusCode} - {errorMessage}");
+    }
+
+    var createdUser = await response.Content.ReadFromJsonAsync<UsuarioAuth>();
+    if (createdUser == null)
+        throw new Exception("Failed to create user: No user data returned from API");
+
+    var participante = new Participante
+    {
+        Nome = "",
+        Contacto = "",
+        DataNascimento = DateTime.MinValue,
+        IdUsuario = createdUser.Id
+    };
+
+    var participanteResponse = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/participante", participante);
+
+    if (!participanteResponse.IsSuccessStatusCode)
+    {
+        string errorMessage = await participanteResponse.Content.ReadAsStringAsync();
+        throw new Exception($"API Error (Participante): {participanteResponse.StatusCode} - {errorMessage}");
+    }
+
+    return createdUser;
+}
     
     public async Task<UsuarioAuth?> AuthenticateUserAsync(string email, string password)
     {
@@ -70,6 +112,13 @@ public class UsuarioService
         string computedHash = HashPassword(password, user.SenhaSalt);
         return computedHash == user.SenhaHash ? user : null;
     }
+    
+    public async Task<bool> UpdateUserAsync(string currentEmail, string newEmail)
+    {
+        var response = await _httpClient.PutAsJsonAsync("/api/users/update", new { CurrentEmail = currentEmail, NewEmail = newEmail });
+        return response.IsSuccessStatusCode;
+    }
+    
 
     private string HashPassword(string password, string salt)
     {

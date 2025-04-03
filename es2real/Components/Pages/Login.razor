@@ -1,7 +1,12 @@
 ﻿@page "/login"
 @using System.Net.Http.Json
+@using System.Text.Json
+@using ES2Real.Data
 @inject HttpClient Http
 @inject UsuarioService usuarioService
+@inject NavigationManager Navigation
+@inject UserSessionService AuthStateProvider
+
 
 <h3>Login</h3>
 
@@ -34,20 +39,23 @@
     [SupplyParameterFromForm]
     private UserLoginModel userModel { get; set; } = new();
     
-    private string loginMessage = string.Empty; // Stores the login message
+    private string loginMessage = string.Empty;
 
     private async Task HandleLogin()
     {
         var usuario = await usuarioService.AuthenticateUserAsync(userModel.Email, userModel.Password);
         if (usuario != null)
         {
-            loginMessage = "<strong>You are logged in!</strong>"; // Display success message
-            StateHasChanged(); // Force UI update
+            AuthStateProvider.SetUsuario(usuario); // Store user in session service
+
+            if (usuario.TipoUsuario == "Organizador")
+                Navigation.NavigateTo("/organizador");
+            else if (usuario.TipoUsuario == "Participante")
+                Navigation.NavigateTo("/participante");
         }
         else
         {
             loginMessage = "<strong style='color:red;'>Login failed! Invalid email or password.</strong>";
-            Console.WriteLine("Falha na autenticação");
             StateHasChanged();
         }
     }
@@ -56,12 +64,5 @@
     {
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-    }
-
-    public class UsuarioAuth
-    {
-        public string Email { get; set; } = string.Empty;
-        public string SenhaSalt { get; set; } = string.Empty;
-        public string SenhaHash { get; set; } = string.Empty;
     }
 }

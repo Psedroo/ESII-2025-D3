@@ -49,11 +49,6 @@
 
     private async Task RegisterUser()
     {
-        Console.WriteLine("RegisterUser method called.");
-        Console.WriteLine($"Username: {userModel.Username}");
-        Console.WriteLine($"Email: {userModel.Email}");
-        Console.WriteLine($"Password: {userModel.Password}");
-        
         try
         {
             var user = await _usuarioService.RegisterUserAsync(
