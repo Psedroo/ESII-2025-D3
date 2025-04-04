@@ -12,7 +12,7 @@ public class UsuarioService
         _httpClient = httpClient;
     }
 
-    public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password)
+    public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario)
 {
     // Check for existing username and email separately
     var usernameCheck = await _httpClient.GetAsync($"https://localhost:44343/api/usuario/exists?username={username}");
@@ -50,7 +50,7 @@ public class UsuarioService
         Email = email,
         SenhaHash = senhaHash,
         SenhaSalt = salt,
-        TipoUsuario = "Participante"
+        TipoUsuario = tipoUsuario
     };
 
     var response = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/usuario", newUser);
@@ -65,20 +65,25 @@ public class UsuarioService
     if (createdUser == null)
         throw new Exception("Failed to create user: No user data returned from API");
 
-    var participante = new Participante
+    if (tipoUsuario == "Participante")
     {
-        Nome = "",
-        Contacto = "",
-        DataNascimento = DateTime.MinValue,
-        IdUsuario = createdUser.Id
-    };
+        var participante = new Participante
+        {
+            Nome = "",
+            Contacto = "",
+            DataNascimento = DateTime.MinValue,
+            IdUsuario = createdUser.Id
+        };
 
-    var participanteResponse = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/participante", participante);
 
-    if (!participanteResponse.IsSuccessStatusCode)
-    {
-        string errorMessage = await participanteResponse.Content.ReadAsStringAsync();
-        throw new Exception($"API Error (Participante): {participanteResponse.StatusCode} - {errorMessage}");
+        var participanteResponse =
+            await _httpClient.PostAsJsonAsync("https://localhost:44343/api/participante", participante);
+        
+        if (!participanteResponse.IsSuccessStatusCode)
+        {
+            string errorMessage = await participanteResponse.Content.ReadAsStringAsync();
+            throw new Exception($"API Error (Participante): {participanteResponse.StatusCode} - {errorMessage}");
+        }
     }
 
     return createdUser;
