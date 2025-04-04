@@ -14,7 +14,6 @@ obj/
 
 # Ignore ASP.NET artifacts
 node_modules/
-wwwroot/
 
 # Ignore secrets and configurations
 appsettings*.json
