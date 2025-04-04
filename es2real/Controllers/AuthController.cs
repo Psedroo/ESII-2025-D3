@@ -104,7 +104,28 @@ public class AuthController : ControllerBase
         var token = GenerateJwtToken(user);
         return Ok(new { token });
     }
+    
+    [HttpGet("exists")]
+    public async Task<IActionResult> CheckUserExists([FromQuery] string? email, [FromQuery] string? username)
+    {
+        if (string.IsNullOrEmpty(email) && string.IsNullOrEmpty(username))
+            return BadRequest(new { message = "Email or username is required." });
 
+        bool exists = false;
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            exists = await _context.UsuariosAuth.AnyAsync(u => u.Email == email);
+        }
+        else if (!string.IsNullOrEmpty(username))
+        {
+            exists = await _context.UsuariosAuth.AnyAsync(u => u.Username == username);
+        }
+
+        return Ok(exists);  // Return just the boolean value
+    }
+
+    
     private bool VerifyPassword(string inputPassword, string storedHash, string storedSalt)
     {
         using var hmac = new HMACSHA256(Convert.FromBase64String(storedSalt));
@@ -151,6 +172,8 @@ public class AuthController : ControllerBase
     }
     
 }
+
+
 
 // Request models
 public class RegisterRequest
