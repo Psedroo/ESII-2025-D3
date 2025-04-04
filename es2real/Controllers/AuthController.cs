@@ -20,91 +20,29 @@ public class AuthController : ControllerBase
         _context = context;
         _configuration = configuration;
     }
-
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    
+    
+    [HttpGet("exists")]
+    public async Task<IActionResult> CheckUserExists([FromQuery] string? email, [FromQuery] string? username)
     {
-        if (string.IsNullOrWhiteSpace(request.Username) || 
-            string.IsNullOrWhiteSpace(request.Email) || 
-            string.IsNullOrWhiteSpace(request.Password))
-        {
-            Console.WriteLine("❌ Erro: Campos obrigatórios ausentes.");
-            return BadRequest(new { message = "Username, email, and password are required" });
-        } 
-    
-        if (await _context.UsuariosAuth.AnyAsync(u => u.Email == request.Email))
-            return BadRequest(new { message = "Email already in use" });
-    
-        if (await _context.UsuariosAuth.AnyAsync(u => u.Username == request.Username))
-            return BadRequest(new { message = "Username already in use" });
-    
-        try
-        {
-            // Criar hash da senha
-            using var hmac = new HMACSHA256();
-            var salt = Convert.ToBase64String(hmac.Key);
-            var hash = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(request.Password)));
-    
-            // Criar usuário
-            var newUser = new UsuarioAuth
-            {
-                Username = request.Username,
-                Email = request.Email,
-                SenhaHash = hash,
-                SenhaSalt = salt,
-                TipoUsuario = "Participante"
-            };
-            Console.WriteLine("Olá, mundo!");
-    
-            _context.UsuariosAuth.Add(newUser);
-            await _context.SaveChangesAsync(); // Salvar usuário primeiro
-           
-            // Criar participante vinculado ao usuário
-            var participante = new Participante
-            {
-                Nome = request.Username,
-                Contacto = "",
-                DataNascimento = DateTime.UtcNow,
-                IdUsuario = newUser.Id
-            };
-    
-            _context.Participantes.Add(participante);
-            await _context.SaveChangesAsync(); // Salvar participante
-    
-            return Ok(new { message = "Account created successfully" });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Error saving to database", error = ex.Message });
-        }
-    }
-    
+        if (string.IsNullOrEmpty(email) && string.IsNullOrEmpty(username))
+            return BadRequest(new { message = "Email or username is required." });
 
-    //---------------------------------------------------------------------------------------------
+        bool exists = false;
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
-    {
-        // Validate input
-        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        if (!string.IsNullOrEmpty(email))
         {
-            return BadRequest(new { message = "Email and password are required" });
+            exists = await _context.UsuariosAuth.AnyAsync(u => u.Email == email);
+        }
+        else if (!string.IsNullOrEmpty(username))
+        {
+            exists = await _context.UsuariosAuth.AnyAsync(u => u.Username == username);
         }
 
-        // Find user by email
-        var user = await _context.UsuariosAuth
-            .FirstOrDefaultAsync(u => u.Email == request.Email);
-
-        if (user == null || !VerifyPassword(request.Password, user.SenhaHash, user.SenhaSalt))
-        {
-            return Unauthorized(new { message = "Invalid email or password" });
-        }
-
-        // Generate and return JWT token
-        var token = GenerateJwtToken(user);
-        return Ok(new { token });
+        return Ok(exists);  // Return just the boolean value
     }
 
+    
     private bool VerifyPassword(string inputPassword, string storedHash, string storedSalt)
     {
         using var hmac = new HMACSHA256(Convert.FromBase64String(storedSalt));
@@ -151,6 +89,8 @@ public class AuthController : ControllerBase
     }
     
 }
+
+
 
 // Request models
 public class RegisterRequest
