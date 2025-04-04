@@ -2,14 +2,13 @@
 @using System.ComponentModel.DataAnnotations
 @inject UsuarioService _usuarioService
 
-<h3>Register</h3>
 
 @if (!string.IsNullOrEmpty(message))
 {
     <p>@message</p>
 }
 
-<div class="container">
+@*<div class="container">
     <EditForm Model="@userModel" OnValidSubmit="RegisterUser" FormName="Register">
         <DataAnnotationsValidator />
         <ValidationSummary />
@@ -28,25 +27,99 @@
             <label>Password:</label>
             <InputText type="password" @bind-Value="userModel.Password" required />
         </div>
-
-        <div class="form-group">
-            <label>Tipo de Utilizador:</label>
-            <InputSelect @bind-Value="userModel.TipoUsuario" class="form-control">
-                <option value="">-- Selecionar --</option>
-                <option value="Participante">Participante</option>
-                <option value="Organizador">Organizador</option>
-            </InputSelect>
-        </div>
     
         <button type="submit">Register</button>
     </EditForm>
-</div>
+</div>*@
+
+<section class="vh-80" style="background-color: #eee;">
+    <div class="container h-100">
+        <div class="row d-flex justify-content-center align-items-center h-100">
+            <div class="col-lg-12 col-xl-11">
+                <div class="card text-black" style="border-radius: 25px;">
+                    <div class="card-body p-0 ">
+                        <div class="row justify-content-center">
+                            <div class="col-md-10 col-lg-6 col-xl-5 order-2 order-lg-1">
+
+                                <p class="text-center h1 fw-bold mb-3 mx-1 mx-md-4 ">Sign up</p>
+
+                                <EditForm class="mx-1 mx-md-4" Model="@userModel" OnValidSubmit="RegisterUser" FormName="Register">
+                                    <DataAnnotationsValidator />
+                                    <ValidationSummary />
+
+                                    <div class="d-flex flex-row align-items-center mb-4">
+                                        <i class="fas fa-user fa-lg me-3 fa-fw"></i>
+                                        <div data-mdb-input-init class="form-outline flex-fill mb-0">
+                                            <InputText type="text" id="form3Example1c" class="form-control" @bind-Value="userModel.Username" required/>
+                                            <label class="form-label" for="form3Example1c">Your Name</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-row align-items-center mb-4">
+                                        <i class="fas fa-envelope fa-lg me-3 fa-fw"></i>
+                                        <div data-mdb-input-init class="form-outline flex-fill mb-0">
+                                            <InputText type="email" id="form3Example3c" class="form-control" @bind-Value="userModel.Email" required/>
+                                            <label class="form-label" for="form3Example3c">Your Email</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-row align-items-center mb-4">
+                                        <i class="fas fa-lock fa-lg me-3 fa-fw"></i>
+                                        <div data-mdb-input-init class="form-outline flex-fill mb-0">
+                                            <InputText type="password" id="form3Example4c" class="form-control" @bind-Value="userModel.Password" required/>
+                                            <label class="form-label" for="form3Example4c">Password</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-row align-items-center mb-4">
+                                        <i class="fas fa-key fa-lg me-3 fa-fw"></i>
+                                        <div data-mdb-input-init class="form-outline flex-fill mb-0">
+                                            <input type="password" id="form3Example4cd" class="form-control"/>
+                                            <label class="form-label" for="form3Example4cd">Repeat your password</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex flex-row align-items-center mb-4">
+                                        <i class="fas fa-envelope fa-lg me-3 fa-fw"></i>
+                                        <div data-mdb-input-init class="form-outline flex-fill mb-0">
+                                            <InputSelect @bind-Value="userModel.TipoUsuario" id="form3Example4ce" class="form-control w-100">
+                                                <option value="">-- Selecionar --</option>
+                                                <option value="Participante">Participante</option>
+                                                <option value="Organizador">Organizador</option>
+                                            </InputSelect>
+                                            <label class="form-label mt-2 w-100 text-start" for="form3Example4ce">Tipo de Utilizador</label>
+                                        </div>
+                                    </div>
+
+
+                                    <div class="d-flex justify-content-center mx-4 mb-3 mb-lg-4">
+                                        <button type="submit" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-lg">Register</button>
+                                    </div>
+                                </EditForm>
+
+                            </div>
+                            <div class="col-md-10 col-lg-6 col-xl-7 d-flex align-items-center order-1 order-lg-2">
+
+                                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-registration/draw1.webp"
+                                     class="img-fluid" alt="Sample image">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+
 
 @code {
     [SupplyParameterFromForm]
     private UserRegistrationModel userModel { get; set; } = new();
     private string message = string.Empty;
-
+    
     private async Task RegisterUser()
     {
         try
@@ -61,12 +134,14 @@
             message = $"An error occurred: {ex.Message}";
         }
     }
+    
+    
 
     public class UserRegistrationModel
     {
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public string TipoUsuario { get; set; } = string.Empty;
+        public string TipoUsuario { get; set; } = "Participante";
     }
 }
