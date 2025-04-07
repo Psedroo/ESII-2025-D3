@@ -58,15 +58,15 @@
                                     <div class="d-flex flex-row align-items-center mb-4">
                                         <i class="fas fa-key fa-lg me-3 fa-fw"></i>
                                         <div data-mdb-input-init class="form-outline flex-fill mb-0">
-                                            <input type="password" id="form3Example4cd" class="form-control"/>
-                                            <label class="form-label" for="form3Example4cd">Repeat your password</label>
+                                            <InputText type="password" id="form3Example4cd" class="form-control" @bind-Value="verificacao.vefificar" required/>
+                                            <label class="form-label" for="form3Example4cd">Repita a Password</label>
                                         </div>
                                     </div>
 
                                     <div class="d-flex flex-row align-items-center mb-4">
                                         <i class="fas fa-envelope fa-lg me-3 fa-fw"></i>
                                         <div data-mdb-input-init class="form-outline flex-fill mb-0">
-                                            <InputSelect @bind-Value="userModel.TipoUsuario" id="form3Example4ce" class="form-control w-100">
+                                            <InputSelect @bind-Value="userModel.TipoUsuario" id="form3Example4ce" class="form-control w-100" required>
                                                 <option value="">-- Selecionar --</option>
                                                 <option value="Participante">Participante</option>
                                                 <option value="Organizador">Organizador</option>
@@ -102,10 +102,23 @@
 @code {
     [SupplyParameterFromForm]
     private UserRegistrationModel userModel { get; set; } = new();
+
+    [SupplyParameterFromForm]
+    private Verificar verificacao { get; set; } = new();
+    
     private string message = string.Empty;
+    
     
     private async Task RegisterUser()
     {
+        if (!verificacao.vefificar.Equals(userModel.Password))
+        {
+
+            
+            message = "As senhas não coincidem.";
+            return;
+        }
+        
         try
         {
             var user = await _usuarioService.RegisterUserAsync(
@@ -127,5 +140,10 @@
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string TipoUsuario { get; set; } = string.Empty;
+    }
+
+    public class Verificar
+    {
+        public string vefificar { get; set; } = string.Empty;
     }
 }
