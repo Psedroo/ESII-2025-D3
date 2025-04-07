@@ -1,0 +1,21 @@
+﻿@namespace ES2Real.Components.Layout
+@using Microsoft.JSInterop
+
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+@code {
+    private bool IsHome => Navigation.Uri == Navigation.BaseUri;
+
+    private async Task GoBack()
+    {
+        // Tenta chamar a função JavaScript e adicionar um log para verificar se está a ser chamada.
+        Console.WriteLine("Tentando chamar goBack...");
+        await JS.InvokeVoidAsync("goBack");
+    }
+}
+
+@if (!IsHome)
+{
+    <button class="btn btn-secondary" @onclick="GoBack">⬅ Voltar</button>
+}
