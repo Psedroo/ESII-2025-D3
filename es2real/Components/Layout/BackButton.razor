@@ -3,14 +3,14 @@
 
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+<script src="js/backButton.js"></script>
+
 
 @code {
     private bool IsHome => Navigation.Uri == Navigation.BaseUri;
 
     private async Task GoBack()
     {
-        // Tenta chamar a função JavaScript e adicionar um log para verificar se está a ser chamada.
-        Console.WriteLine("Tentando chamar goBack...");
         await JS.InvokeVoidAsync("goBack");
     }
 }
