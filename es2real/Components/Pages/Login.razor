@@ -80,15 +80,16 @@
 
     private async Task HandleLogin()
     {
-        var usuario = await utilizadorService.AuthenticateUserAsync(userModel.Email, userModel.Password);
-        if (usuario != null)
+        var user = await utilizadorService.AuthenticateUserAsync(userModel.Email, userModel.Password);
+        if (user != null)
         {
-            AuthStateProvider.SetUsuario(usuario); // Store user in session service
+            AuthStateProvider.SetUsuario(user); // Store user in session service
 
-            if (usuario.TipoUsuario == "Organizador")
+            if (user.TipoUsuario == "Organizador")
                 Navigation.NavigateTo("/organizador");
-            else if (usuario.TipoUsuario == "Participante")
-                Navigation.NavigateTo("/participante");
+            else if (user.TipoUsuario == "Participante")
+                Navigation.NavigateTo($"/participante/{user.Id}");
+
         }
         else
         {

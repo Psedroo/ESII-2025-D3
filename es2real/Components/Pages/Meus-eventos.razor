@@ -1,27 +1,63 @@
 ﻿@page "/Meus-eventos"
 
 @using ES2Real.Components.Layout
+@rendermode InteractiveServer
+@inject HttpClient Http
 
 <h3></h3>
 
 <BackButton />
 
-@rendermode InteractiveServer
-
-<PageTitle>Counter</PageTitle>
-
-<h1>Eventos</h1>
-
-<p role="status">Current count: @currentCount</p>
-
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<div class="mt-4">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Data</th>
+            <th>Local</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var evento in eventos)
+        {
+            <tr>
+                <td>@evento.Nome</td>
+                <td>@evento.Data.ToString("dd/MM/yyyy")</td>
+                <td>@evento.Local</td>
+                <td>
+                    <button class="btn btn-danger" @onclick="() => RemoverEvento(evento.Id)">Remover</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
 
 @code {
-    private int currentCount = 0;
+    private List<Evento> eventos = new();
+    private Evento novoEvento = new() { Data = new DateTime(2025, 1, 1) }; 
+    private bool mostrarFormulario = false;
 
-    private void IncrementCount()
+    protected override async Task OnInitializedAsync()
     {
-        currentCount++;
+        await CarregarEventos();
+    }
+
+    private async Task CarregarEventos()
+    {
+        try
+        {
+            eventos = await Http.GetFromJsonAsync<List<Evento>>("api/BilheteParticipante");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
+        }
+    }
+
+    private async Task RemoverEvento(int id)
+    {
     }
 
 }

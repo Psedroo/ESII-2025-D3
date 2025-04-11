@@ -1,6 +1,10 @@
-﻿@using Microsoft.EntityFrameworkCore.Metadata.Internal
+﻿@using ES2Real.Data
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
+@inject utilizadorService utilizadorService
+@inject UserSessionService AuthStateProvider
+
 
 <div class="page">
     <div class="sidebar">
@@ -9,7 +13,7 @@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <button class="btn btn-lg px-5" @onclick="() => AuthStateProvider.Logout()">Terminar Sessão</button>
         </div>
 
         <article class="content px-4">
