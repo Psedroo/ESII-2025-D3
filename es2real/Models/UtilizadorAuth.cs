@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-public class UsuarioAuth
+public class UtilizadorAuth
 {
     [Key]
     public int Id { get; set; }

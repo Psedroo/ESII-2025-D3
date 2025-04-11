@@ -13,5 +13,5 @@ public class Organizador
     [ForeignKey("Usuario")]
     public int IdUsuario { get; set; }
     
-    public UsuarioAuth? Usuario { get; set; }
+    public UtilizadorAuth? Usuario { get; set; }
 }

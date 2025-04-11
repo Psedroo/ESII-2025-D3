@@ -10,8 +10,10 @@ public class Participante
     public string Contacto { get; set; } = string.Empty;
     public DateTime DataNascimento { get; set; }
     
-    [ForeignKey("Usuario")]
-    public int IdUsuario { get; set; }
+    [ForeignKey("UtilizadorAuth")]
+    public int IdUtilizador { get; set; }
     
-    public UsuarioAuth? Usuario { get; set; }
+    public UtilizadorAuth? Utilizador { get; set; }
+    
+    public List<Bilhete_Participante> BilheteParticipante { get; set; } = new();
 }

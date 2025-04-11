@@ -8,7 +8,7 @@
 @using System.Text.Json
 @using ES2Real.Data
 @inject HttpClient Http
-@inject UsuarioService usuarioService
+@inject utilizadorService utilizadorService
 @inject NavigationManager Navigation
 @inject UserSessionService AuthStateProvider
 
@@ -32,8 +32,8 @@
                             <EditForm Model="userModel" OnValidSubmit="HandleLogin" FormName="Login">
                                 <DataAnnotationsValidator/>
                                 
-                                <h2 class="fw-bold mb-2 text-uppercase">Login</h2>
-                                <p class="text-white-50 mb-5">Please enter your login and password!</p>
+                                <h2 class="fw-bold mb-2 text-uppercase">Entrar</h2>
+                                <p class="text-white-50 mb-5">Por favor insira a sua palavra-passe e o seu email!</p>
 
                                 <div data-mdb-input-init class="form-outline form-white mb-4">
                                     <InputText type="email" id="typeEmailX" class="form-control form-control-lg" @bind-Value="userModel.Email" required/>
@@ -42,12 +42,12 @@
 
                                 <div data-mdb-input-init class="form-outline form-white mb-4">
                                     <InputText type="password" id="typePasswordX" class="form-control form-control-lg" @bind-Value="userModel.Password" required/>
-                                    <label class="form-label" for="typePasswordX">Password</label>
+                                    <label class="form-label" for="typePasswordX">Palavra-passe</label>
                                 </div>
 
-                                <p class="small mb-3 pb-lg-2"><a class="text-white-50" href="#!">Forgot password?</a></p>
+                                <p class="small mb-3 pb-lg-2"><a class="text-white-50" href="#!">Esqueceu-se da palavra-passe?</a></p>
 
-                                <button data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-light btn-lg px-5" type="submit">Login</button>
+                                <button data-mdb-button-init data-mdb-ripple-init class="btn btn-outline-light btn-lg px-5" type="submit">Entrar</button>
 
                             </EditForm>
 
@@ -60,7 +60,7 @@
                         </div>
 
                         <div>
-                            <p class="mb-0">Don't have an account? <a href="/registar" class="text-white-50 fw-bold">Sign Up</a>
+                            <p class="mb-0">Não tem conta? <a href="/registar" class="text-white-50 fw-bold">Registar</a>
                             </p>
                         </div>
 
@@ -80,7 +80,7 @@
 
     private async Task HandleLogin()
     {
-        var usuario = await usuarioService.AuthenticateUserAsync(userModel.Email, userModel.Password);
+        var usuario = await utilizadorService.AuthenticateUserAsync(userModel.Email, userModel.Password);
         if (usuario != null)
         {
             AuthStateProvider.SetUsuario(usuario); // Store user in session service

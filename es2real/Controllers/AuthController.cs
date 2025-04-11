@@ -32,11 +32,11 @@ public class AuthController : ControllerBase
 
         if (!string.IsNullOrEmpty(email))
         {
-            exists = await _context.UsuariosAuth.AnyAsync(u => u.Email == email);
+            exists = await _context.UtilizadorAuth.AnyAsync(u => u.Email == email);
         }
         else if (!string.IsNullOrEmpty(username))
         {
-            exists = await _context.UsuariosAuth.AnyAsync(u => u.Username == username);
+            exists = await _context.UtilizadorAuth.AnyAsync(u => u.Username == username);
         }
 
         return Ok(exists);  // Return just the boolean value
@@ -51,7 +51,7 @@ public class AuthController : ControllerBase
         return computedHashString == storedHash;
     }
 
-    private string GenerateJwtToken(UsuarioAuth user)
+    private string GenerateJwtToken(UtilizadorAuth user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -76,9 +76,9 @@ public class AuthController : ControllerBase
     
     // 🔹 Endpoint para obter todos os utilizadores
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UsuarioAuth>>> GetUsuarios()
+    public async Task<ActionResult<IEnumerable<UtilizadorAuth>>> GetUsuarios()
     {
-        var usuarios = await _context.UsuariosAuth.ToListAsync();
+        var usuarios = await _context.UtilizadorAuth.ToListAsync();
 
         if (usuarios == null || usuarios.Count == 0)
         {
