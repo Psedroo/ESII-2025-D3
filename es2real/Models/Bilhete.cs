@@ -19,8 +19,8 @@ public class Bilhete
     public int Quantidade { get; set; }
     
     [ForeignKey("Participante")]
-    public int IdEvento { get; set; }
-    public Evento? Evento { get; set; }
+    public int IdParticipante { get; set; }
+    public Participante? Participante { get; set; }
     
     public List<Bilhete_Participante> BilheteParticipante {get; set;} = new();
 }

@@ -72,7 +72,7 @@ public class utilizadorService
                 Nome = "", // Definir nome apropriado depois
                 Contacto = "",
                 DataNascimento = DateTime.MinValue,
-                IdUsuario = createdUser.Id
+                IdUtilizador = createdUser.Id
             };
 
             var participanteResponse = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/participante", participante);

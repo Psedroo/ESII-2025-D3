@@ -43,21 +43,22 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(ea => ea.IdAtividade)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Many-to-Many: Evento <-> Bilhete
+        // Many-to-Many: Participante <-> Bilhete
         modelBuilder.Entity<Bilhete_Participante>()
-            .HasKey(eb => new { eb.IdEvento, eb.IdBilhete });
+            .HasKey(bp => new { bp.IdParticipante, bp.IdBilhete });
 
         modelBuilder.Entity<Bilhete_Participante>()
-            .HasOne(eb => eb.Evento)
-            .WithMany(e => e.EventoBilhetes)
-            .HasForeignKey(eb => eb.IdEvento)
+            .HasOne(bp => bp.Participante)
+            .WithMany(p => p.BilheteParticipante)
+            .HasForeignKey(bp => bp.IdParticipante)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Bilhete_Participante>()
-            .HasOne(eb => eb.Bilhete)
+            .HasOne(bp => bp.Bilhete)
             .WithMany(b => b.BilheteParticipante)
-            .HasForeignKey(eb => eb.IdBilhete)
+            .HasForeignKey(bp => bp.IdBilhete)
             .OnDelete(DeleteBehavior.Cascade);
+
 
         // Many-to-Many: Evento <-> RelatorioEspecifico
         modelBuilder.Entity<Evento_RelatorioEspecifico>()
@@ -100,9 +101,9 @@ public class ApplicationDbContext : DbContext
 
         // Foreign Key: Participante -> UsuarioAuth
         modelBuilder.Entity<Participante>()
-            .HasOne(p => p.Usuario)
+            .HasOne(p => p.Utilizador)
             .WithMany()
-            .HasForeignKey(p => p.IdUsuario)
+            .HasForeignKey(p => p.IdUtilizador)
             .OnDelete(DeleteBehavior.Cascade);
         
         modelBuilder.Entity<Bilhete>()

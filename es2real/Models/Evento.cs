@@ -21,7 +21,6 @@ public class Evento
     public Organizador? Organizador { get; set; }
     
     public List<Evento_Atividade> EventoAtividades { get; set; } = new();
-    public List<Bilhete_Participante> EventoBilhetes { get; set; } = new();
     public List<Evento_RelatorioEspecifico> EventoRelatoriosEspecificos { get; set; } = new();
     public List<Evento_RelatorioGeral> EventoRelatoriosGerais { get; set; } = new();
 

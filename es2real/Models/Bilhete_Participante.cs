@@ -2,9 +2,9 @@
 
 public class Bilhete_Participante
 {
-    [ForeignKey("Evento")]
-    public int IdEvento { get; set; }
-    public Evento Evento { get; set; } = null!;
+    [ForeignKey("Participante")]
+    public int IdParticipante { get; set; }
+    public Participante Participante { get; set; } = null!;
 
     [ForeignKey("Bilhete")]
     public int IdBilhete { get; set; }
