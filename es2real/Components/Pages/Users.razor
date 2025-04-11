@@ -38,14 +38,14 @@ else
 }
 
 @code {
-    UsuarioAuth[] users;
+    UtilizadorAuth[] users;
     string errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            users = await Http.GetFromJsonAsync<UsuarioAuth[]>("api/usuario");
+            users = await Http.GetFromJsonAsync<UtilizadorAuth[]>("api/usuario");
         }
         catch (Exception ex)
         {

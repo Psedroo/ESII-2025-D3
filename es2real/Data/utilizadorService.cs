@@ -3,16 +3,16 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-public class UsuarioService
+public class utilizadorService
 {
     private readonly HttpClient _httpClient;
 
-    public UsuarioService(HttpClient httpClient)
+    public utilizadorService(HttpClient httpClient)
     {
         _httpClient = httpClient;
     }
 
-    public async Task<UsuarioAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario){
+    public async Task<UtilizadorAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario){
         
         var usernameCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?username={username}");
         var emailCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?email={email}");
@@ -43,7 +43,7 @@ public class UsuarioService
         string salt = Convert.ToBase64String(saltBytes);
         string senhaHash = HashPassword(password, salt);
 
-        var newUser = new UsuarioAuth
+        var newUser = new UtilizadorAuth
         {
             Username = username,
             Email = email,
@@ -60,7 +60,7 @@ public class UsuarioService
             throw new Exception($"API Error: {response.StatusCode} - {errorMessage}");
         }
 
-        var createdUser = await response.Content.ReadFromJsonAsync<UsuarioAuth>();
+        var createdUser = await response.Content.ReadFromJsonAsync<UtilizadorAuth>();
         if (createdUser == null)
             throw new Exception("Failed to create user: No user data returned from API");
 
@@ -108,7 +108,7 @@ public class UsuarioService
 }
 
     
-    public async Task<UsuarioAuth?> AuthenticateUserAsync(string email, string password)
+    public async Task<UtilizadorAuth?> AuthenticateUserAsync(string email, string password)
     {
         var response = await _httpClient.GetAsync("https://localhost:44343/api/usuario");
 
@@ -119,7 +119,7 @@ public class UsuarioService
         }
 
         var jsonResponse = await response.Content.ReadAsStringAsync();
-        var users = JsonSerializer.Deserialize<List<UsuarioAuth>>(jsonResponse, 
+        var users = JsonSerializer.Deserialize<List<UtilizadorAuth>>(jsonResponse, 
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         if (users == null || users.Count == 0)

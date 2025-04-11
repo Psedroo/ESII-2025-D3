@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-public class Evento_Bilhete
+public class Bilhete_Participante
 {
     [ForeignKey("Evento")]
     public int IdEvento { get; set; }

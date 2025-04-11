@@ -5,19 +5,19 @@ namespace ES2Real.Controllers;
 
 [Route("api/usuario")]
 [ApiController]
-public class UsuarioController : ControllerBase
+public class UtilizadorController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
 
-    public UsuarioController(ApplicationDbContext context)
+    public UtilizadorController(ApplicationDbContext context)
     {
         _context = context;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UsuarioAuth>>> GetUsers()
+    public async Task<ActionResult<IEnumerable<UtilizadorAuth>>> GetUsers()
     {
-        var users = await _context.UsuariosAuth.ToListAsync();
+        var users = await _context.UtilizadorAuth.ToListAsync();
         if (!users.Any())
         {
             return NotFound("No users found.");
@@ -26,9 +26,9 @@ public class UsuarioController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<UsuarioAuth>> GetUser(int id)
+    public async Task<ActionResult<UtilizadorAuth>> GetUser(int id)
     {
-        var User = await _context.UsuariosAuth.FindAsync(id);
+        var User = await _context.UtilizadorAuth.FindAsync(id);
 
         if (User == null)
         {
@@ -38,17 +38,17 @@ public class UsuarioController : ControllerBase
         return User;
     }
     [HttpPost]  
-    public async Task<ActionResult<UsuarioAuth>> SetUser([FromBody]UsuarioAuth usuario)
+    public async Task<ActionResult<UtilizadorAuth>> SetUser([FromBody]UtilizadorAuth utilizador)
     {
-        if (usuario == null)
+        if (utilizador == null)
         {   
             return BadRequest("Invalid user data.");
         }
 
-        _context.UsuariosAuth.Add(usuario);
+        _context.UtilizadorAuth.Add(utilizador);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetUser), new { id = usuario.Id }, usuario);
+        return CreatedAtAction(nameof(GetUser), new { id = utilizador.Id }, utilizador);
     }
     
 }

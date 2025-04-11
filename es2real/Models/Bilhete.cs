@@ -13,14 +13,14 @@ public class Bilhete
     [Key]
     public int Id { get; set; }
     
-    public TipoBilhete Tipo { get; set; } // Use enum directly, no foreign key
+    public TipoBilhete Tipo { get; set; }
     
     public string Descricao { get; set; } = string.Empty;
     public int Quantidade { get; set; }
     
     [ForeignKey("Participante")]
-    public int IdParticipante { get; set; }
-    public Participante? Participante { get; set; }
+    public int IdEvento { get; set; }
+    public Evento? Evento { get; set; }
     
-    public List<Evento_Bilhete> EventoBilhetes { get; set; } = new();
+    public List<Bilhete_Participante> BilheteParticipante {get; set;} = new();
 }

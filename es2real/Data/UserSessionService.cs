@@ -2,13 +2,13 @@
 
 public class UserSessionService
 {
-    private UsuarioAuth? _usuarioAtual;
+    private UtilizadorAuth? _usuarioAtual;
 
-    public UsuarioAuth? UsuarioAtual => _usuarioAtual;
+    public UtilizadorAuth? UsuarioAtual => _usuarioAtual;
 
-    public void SetUsuario(UsuarioAuth usuario)
+    public void SetUsuario(UtilizadorAuth utilizador)
     {
-        _usuarioAtual = usuario;
+        _usuarioAtual = utilizador;
     }
 
     public void Logout()
