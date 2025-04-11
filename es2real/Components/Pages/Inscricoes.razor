@@ -1,28 +1,104 @@
 ﻿@page "/Inscricoes"
-
 @using ES2Real.Components.Layout
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
 
-<h3></h3>
+<h3>Eventos Disponíveis</h3>
 
 <BackButton />
-
 
 @rendermode InteractiveServer
 
 <PageTitle>Inscricoes</PageTitle>
 
-<h1>Counter</h1>
+<div class="search-bar">
+    <input @bind="filtro" @bind:event="oninput" placeholder="Procurar eventos..." />
+    <button><span class="lupa">&#128269;</span></button>
+</div>
 
-<p role="status">Current count: @currentCount</p>
+@if (eventosFiltrados is null)
+{
+    <p>Carregando eventos...</p>
+}
+else if (!eventosFiltrados.Any())
+{
+    <p>Nenhum evento encontrado.</p>
+}
+else
+{
+    <div class="eventos-container">
+        @foreach (var evento in eventosFiltrados)
+        {
+            <div class="evento-card">
+                <h4>@evento.Nome</h4>
+                <p><strong>Categoria:</strong> @evento.Categoria</p>
+                <p><strong>Data:</strong> @evento.Data.ToString("dd/MM/yyyy")</p>
+                <p><strong>Hora:</strong> @evento.Hora</p>
+                <p><strong>Local:</strong> @evento.Local</p>
+                <p><strong>Preço:</strong> @evento.PrecoIngresso.ToString("C")</p>
+            </div>
+        }
+    </div>
+}
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
-
-@code {
-    private int currentCount = 0;
-
-    private void IncrementCount()
-    {
-        currentCount++;
+<style>
+    .search-bar {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
     }
 
+    .search-bar input {
+        padding: 0.5rem;
+        flex: 1;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+    }
+
+    .search-bar button {
+        background: none;
+        border: none;
+        margin-left: 0.5rem;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    .eventos-container {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+    }
+
+    .evento-card {
+        min-width: 250px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .evento-card h4 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+@code {
+    private List<Evento>? eventos;
+    private string filtro = "";
+
+    private IEnumerable<Evento> eventosFiltrados =>
+        string.IsNullOrWhiteSpace(filtro)
+            ? eventos ?? new List<Evento>()
+            : eventos?.Where(e => e.Nome.Contains(filtro, StringComparison.OrdinalIgnoreCase)) ?? new List<Evento>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        eventos = await Db.Eventos
+            .OrderBy(e => e.Data)
+            .ToListAsync();
+    }
 }
