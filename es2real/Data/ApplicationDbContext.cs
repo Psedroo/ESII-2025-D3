@@ -11,7 +11,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Atividade> Atividades { get; set; }
     public DbSet<Bilhete> Bilhetes { get; set; }
     public DbSet<Evento> Eventos { get; set; }
-    public DbSet<Bilhete_Participante> EventoBilhetes { get; set; } 
+    public DbSet<Bilhete_Participante> BilheteParticipante { get; set; } 
     public DbSet<Evento_RelatorioEspecifico> EventoRelatoriosEspecificos { get; set; }
     public DbSet<Evento_RelatorioGeral> EventoRelatoriosGerais { get; set; }
     public DbSet<Evento_Atividade> EventoAtividades { get; set; }
