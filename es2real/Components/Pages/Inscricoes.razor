@@ -1,4 +1,4 @@
-﻿@page "/Inscricoes"
+﻿@page "/Inscricoes/{id:int}"
 @using ES2Real.Components.Layout
 @using Microsoft.EntityFrameworkCore
 @inject ApplicationDbContext Db
@@ -36,10 +36,30 @@ else
                 <p><strong>Hora:</strong> @evento.Hora</p>
                 <p><strong>Local:</strong> @evento.Local</p>
                 <p><strong>Preço:</strong> @evento.PrecoIngresso.ToString("C")</p>
+                <button class="btn btn-info" @onclick="() => ComprarBilhete(evento.Id)">Comprar Bilhete</button>
             </div>
+            
         }
     </div>
 }
+
+@if (mostrarBilhetes)
+{
+    <div class="modal-bilhete">
+        <h4>Escolher Bilhete</h4>
+        <select @bind="bilheteSelecionadoId">
+            <option value="">-- Seleciona um bilhete --</option>
+            @foreach (var b in bilhetesDisponiveis)
+            {
+                <option value="@b.Id">@b.Tipo - @b.Descricao (@b.Quantidade disponíveis)</option>
+            }
+        </select>
+        <button class="btn btn-success" @onclick="ConfirmarCompra" disabled="@(!PodeConfirmar)">Comprar</button>
+        <button class="btn btn-secondary" @onclick="() => mostrarBilhetes = false">Cancelar</button>
+    </div>
+}
+
+
 
 <style>
     .search-bar {
@@ -84,9 +104,35 @@ else
         margin-top: 0;
         margin-bottom: 0.5rem;
     }
+    
+    .modal-bilhete {
+        background: white;
+        padding: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+    }
+
 </style>
 
 @code {
+    [Parameter]
+    public int id { get; set; }
+    
+
+    private bool mostrarBilhetes = false;
+    private int eventoSelecionadoId;
+    private List<Bilhete> bilhetesDisponiveis = new();
+    private int bilheteSelecionadoId;
+    
+    private bool PodeConfirmar => bilheteSelecionadoId > 0;
+
+    
     private List<Evento>? eventos;
     private string filtro = "";
 
@@ -101,4 +147,36 @@ else
             .OrderBy(e => e.Data)
             .ToListAsync();
     }
+
+    
+    private async Task ComprarBilhete(int eventoId)
+    {
+        eventoSelecionadoId = eventoId;
+        bilhetesDisponiveis = await Db.Bilhetes
+            .Where(b => b.idEvento == eventoId && b.Quantidade > 0)
+            .ToListAsync();
+
+        mostrarBilhetes = true;
+    }
+    private async Task ConfirmarCompra()
+    {
+        var novoRegisto = new Bilhete_Participante
+        {
+            IdParticipante = id,
+            IdBilhete = bilheteSelecionadoId
+        };
+
+        Db.Add(novoRegisto);
+
+        var bilhete = await Db.Bilhetes.FindAsync(bilheteSelecionadoId);
+        if (bilhete != null)
+        {
+            bilhete.Quantidade--;
+        }
+
+        await Db.SaveChangesAsync();
+
+        mostrarBilhetes = false;
+    }
+
 }
