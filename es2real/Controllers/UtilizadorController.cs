@@ -13,18 +13,17 @@ public class UtilizadorController : ControllerBase
     {
         _context = context;
     }
-
+    
     [HttpPost]
-    public async Task<ActionResult<UtilizadorAuth>> CreateUser([FromBody] UtilizadorAuth utilizador)
+    public async Task<ActionResult<UtilizadorAuth>> CreateUser([FromBody] UtilizadorAuth newUser)
     {
-        _context.UtilizadorAuth.Add(utilizador);
+        _context.UtilizadorAuth.Add(newUser);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetUsers), new { id = utilizador.Id }, utilizador);
+        return CreatedAtAction(nameof(GetUsers), new { id = newUser.Id }, newUser);
     }
 
-    
-    
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UtilizadorAuth>>> GetUsers()
     {
