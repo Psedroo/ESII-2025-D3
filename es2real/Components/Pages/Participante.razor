@@ -1,71 +1,55 @@
 ﻿@page "/participante/{id:int}"
 @using ES2Real.Components.Layout
-<<<<<<< HEAD
-@inject UserSessionService UserSessionService
-=======
 @using ES2Real.Data
-
 @inject UserSessionService AuthStateProvider
-
-
-@if (AuthStateProvider.UsuarioAtual is not null)
-{
-    <p>Olá, @AuthStateProvider.UsuarioAtual.Username!</p>
-    <p>Email: @AuthStateProvider.UsuarioAtual.Email</p>
-}
-else
-{
-    <p>Nenhum utilizador autenticado.</p>
-}
-
->>>>>>> c0d74e14d48d6ef4e29ce5f43966ea5694b39452
-
+@inject NavigationManager Navigation
 
 <BackButton />
-
-
-@using Microsoft.EntityFrameworkCore.Metadata.Internal
-@rendermode InteractiveServer
-@inject NavigationManager Navigation
 
 <div class="container mt-5">
     <h2 class="text-center">Área do Participante</h2>
 
-    <div class="row mt-4 text-center">
-        <div class="col-md-4">
-            <a href="@($"/Inscricoes/{id}")" class="btn btn-primary btn-lg w-100">Inscrições</a>
+    @if (AuthStateProvider.UsuarioAtual != null)
+    {
+        <p>Olá, @AuthStateProvider.UsuarioAtual.Username!</p>
+        <p>Email: @AuthStateProvider.UsuarioAtual.Email</p>
+
+        <div class="row mt-4 text-center">
+            <div class="col-md-4">
+                <a href="@($"/Inscricoes/{id}")" class="btn btn-primary btn-lg w-100">Inscrições</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Meus-eventos" class="btn btn-success btn-lg w-100">Meus Eventos</a>
+            </div>
         </div>
-        <div class="col-md-4">
-            <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
-        </div>
-        <div class="col-md-4">
-            <a href="/Meus-eventos" class="btn btn-success btn-lg w-100">Meus Eventos</a>
-        </div>
-    </div>
+    }
+    else
+    {
+        <p>Nenhum utilizador autenticado.</p>
+    }
 </div>
 
 @code {
-<<<<<<< HEAD
-    [Inject] UserSessionService AuthStateProvider { get; set; }
-    private UtilizadorAuth? usuarioLogado;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            usuarioLogado = UserSessionService.GetUsuario();
-            Console.WriteLine($"Usuário logado: {usuarioLogado?.Email}, Tipo de Usuário: {usuarioLogado?.TipoUsuario}");
-        
-            if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Participante")
-            {
-                await Task.Delay(1500);
-            }
-
-            StateHasChanged();  // Garantir que o estado da UI seja atualizado antes de realizar a navegação
-        }
-    }
-=======
     [Parameter]
     public int id { get; set; }
->>>>>>> c0d74e14d48d6ef4e29ce5f43966ea5694b39452
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuarioLogado = AuthStateProvider.UsuarioAtual;
+
+        if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Participante")
+        {
+            // Redirect to login if the user is not logged in or is not a 'Participante'
+            Navigation.NavigateTo("/login");
+        }
+        else
+        {
+            // You can use 'id' to retrieve further participant-specific data if necessary
+            Console.WriteLine($"Participante ID: {id}");
+            // If needed, fetch additional data for the participant using 'id'
+        }
+    }
 }

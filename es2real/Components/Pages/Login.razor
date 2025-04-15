@@ -72,42 +72,23 @@
     // Método de Login
     private async Task HandleLogin()
     {
-<<<<<<< HEAD
-        var usuario = await utilizadorService.AuthenticateUserAsync(userModel.Email, userModel.Password);
-    
-        if (usuario != null)
-        {
-            Console.WriteLine($"Usuário logado: {usuario.Email}, Tipo de Usuário: {usuario.TipoUsuario}");
-
-            AuthStateProvider.SetUsuario(usuario);
-            
-            StateHasChanged();  // Força a UI a se atualizar imediatamente
-=======
         var user = await utilizadorService.AuthenticateUserAsync(userModel.Email, userModel.Password);
+        
         if (user != null)
         {
-            AuthStateProvider.SetUsuario(user); // Store user in session service
->>>>>>> c0d74e14d48d6ef4e29ce5f43966ea5694b39452
+            AuthStateProvider.SetUsuario(user);  // Store user in session service
 
             if (user.TipoUsuario == "Organizador")
                 Navigation.NavigateTo("/organizador");
-<<<<<<< HEAD
-            else if (usuario.TipoUsuario == "Participante")
-                Navigation.NavigateTo("/participante", true); // Força o recarregamento da página
-=======
             else if (user.TipoUsuario == "Participante")
-                Navigation.NavigateTo($"/participante/{user.Id}");
-
->>>>>>> c0d74e14d48d6ef4e29ce5f43966ea5694b39452
+                Navigation.NavigateTo($"/participante/{user.Id}");  // Pass user ID to the Participante page
         }
         else
         {
             loginMessage = "<strong style='color:red;'>Falha no login! Email ou palavra-passe inválidos.</strong>";
-            StateHasChanged(); // Atualiza a UI para mostrar a mensagem de erro
+            StateHasChanged();  // Updates UI to show the error message
         }
     }
-
-    
 
     public class UserLoginModel
     {
@@ -115,4 +96,3 @@
         public string Password { get; set; } = string.Empty;
     }
 }
-

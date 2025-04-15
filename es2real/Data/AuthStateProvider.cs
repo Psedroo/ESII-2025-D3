@@ -34,4 +34,9 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
     {
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
+    
+    public void Logout()
+    {
+    }
+
 }

@@ -2,19 +2,25 @@
 {
     private UtilizadorAuth? _usuarioLogado;
 
-    public UtilizadorAuth? UsuarioLogado => _usuarioLogado;
+    public UtilizadorAuth? UsuarioAtual => _usuarioLogado;
 
     public void SetUsuario(UtilizadorAuth usuario)
     {
         _usuarioLogado = usuario;
-        Console.WriteLine(_usuarioLogado.Email);
+        Console.WriteLine(_usuarioLogado?.Email);
     }
 
     public void ClearUsuario()
     {
         _usuarioLogado = null;
     }
-    
+
+    public void Logout()
+    {
+        ClearUsuario();
+        Console.WriteLine("Usuário desconectado.");
+    }
+
     public UtilizadorAuth? GetUsuario()
     {
         if (_usuarioLogado == null)
@@ -24,4 +30,5 @@
         }
         return _usuarioLogado;
     }
+    
 }
