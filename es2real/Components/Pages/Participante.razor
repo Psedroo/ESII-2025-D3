@@ -1,9 +1,25 @@
-﻿@page "/participante"
-
+﻿@page "/participante/{id:int}"
 @using ES2Real.Components.Layout
+<<<<<<< HEAD
 @inject UserSessionService UserSessionService
+=======
+@using ES2Real.Data
 
-<h3></h3>
+@inject UserSessionService AuthStateProvider
+
+
+@if (AuthStateProvider.UsuarioAtual is not null)
+{
+    <p>Olá, @AuthStateProvider.UsuarioAtual.Username!</p>
+    <p>Email: @AuthStateProvider.UsuarioAtual.Email</p>
+}
+else
+{
+    <p>Nenhum utilizador autenticado.</p>
+}
+
+>>>>>>> c0d74e14d48d6ef4e29ce5f43966ea5694b39452
+
 
 <BackButton />
 
@@ -17,7 +33,7 @@
 
     <div class="row mt-4 text-center">
         <div class="col-md-4">
-            <a href="/Inscricoes" class="btn btn-primary btn-lg w-100">Inscrições</a>
+            <a href="@($"/Inscricoes/{id}")" class="btn btn-primary btn-lg w-100">Inscrições</a>
         </div>
         <div class="col-md-4">
             <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
@@ -29,6 +45,7 @@
 </div>
 
 @code {
+<<<<<<< HEAD
     [Inject] UserSessionService AuthStateProvider { get; set; }
     private UtilizadorAuth? usuarioLogado;
 
@@ -47,4 +64,8 @@
             StateHasChanged();  // Garantir que o estado da UI seja atualizado antes de realizar a navegação
         }
     }
+=======
+    [Parameter]
+    public int id { get; set; }
+>>>>>>> c0d74e14d48d6ef4e29ce5f43966ea5694b39452
 }
