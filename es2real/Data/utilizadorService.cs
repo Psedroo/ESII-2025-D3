@@ -2,110 +2,85 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using ES2Real.Data;
 
 public class utilizadorService
 {
     private readonly HttpClient _httpClient;
+    private readonly TipoUsuarioServiceFactory _tipoUsuarioServiceFactory;
 
-    public utilizadorService(HttpClient httpClient)
+    // Construtor com injeção de dependências
+    public utilizadorService(HttpClient httpClient, TipoUsuarioServiceFactory tipoUsuarioServiceFactory)
     {
         _httpClient = httpClient;
+        _tipoUsuarioServiceFactory = tipoUsuarioServiceFactory;
     }
 
-    public async Task<UtilizadorAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario)
-    {
-        var usernameCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?username={username}");
-        var emailCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?email={email}");
-
-        if (usernameCheck.IsSuccessStatusCode)
+     public async Task<UtilizadorAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario)
         {
-            bool usernameExists = await usernameCheck.Content.ReadFromJsonAsync<bool>();
-            if (usernameExists)
+            var usernameCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?username={username}");
+            var emailCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?email={email}");
+
+            if (usernameCheck.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException("The username is already taken.");
+                bool usernameExists = await usernameCheck.Content.ReadFromJsonAsync<bool>();
+                if (usernameExists)
+                {
+                    throw new InvalidOperationException("The username is already taken.");
+                }
             }
-        }
 
-        if (emailCheck.IsSuccessStatusCode)
-        {
-            bool emailExists = await emailCheck.Content.ReadFromJsonAsync<bool>();
-            if (emailExists)
+            if (emailCheck.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException("The email is already registered.");
+                bool emailExists = await emailCheck.Content.ReadFromJsonAsync<bool>();
+                if (emailExists)
+                {
+                    throw new InvalidOperationException("The email is already registered.");
+                }
             }
-        }
-        
-        byte[] saltBytes = new byte[16];
-        using (var rng = new RNGCryptoServiceProvider())
-        {
-            rng.GetBytes(saltBytes);
-        }
-        string salt = Convert.ToBase64String(saltBytes);
-        string senhaHash = HashPassword(password, salt);
 
-        var newUser = new UtilizadorAuth
-        {
-            Username = username,
-            Email = email,
-            SenhaHash = senhaHash,
-            SenhaSalt = salt,
-            TipoUsuario = tipoUsuario
-        };
-
-        var response = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/usuario", newUser);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            string errorMessage = await response.Content.ReadAsStringAsync();
-            throw new Exception($"API Error: {response.StatusCode} - {errorMessage}");
-        }
-
-        var createdUser = await response.Content.ReadFromJsonAsync<UtilizadorAuth>();
-        if (createdUser == null)
-            throw new Exception("Failed to create user: No user data returned from API");
-
-        // Se o usuário for um Participante, inserir na tabela Participante
-        if (tipoUsuario == "Participante")
-        {
-            var participante = new Participante
+            byte[] saltBytes = new byte[16];
+            using (var rng = new RNGCryptoServiceProvider())
             {
-                Nome = "", // Definir nome apropriado depois
-                Contacto = "",
-                DataNascimento = DateTime.MinValue,
-                IdUtilizador = createdUser.Id
+                rng.GetBytes(saltBytes);
+            }
+            string salt = Convert.ToBase64String(saltBytes);
+            string senhaHash = HashPassword(password, salt);
+
+            var newUser = new UtilizadorAuth
+            {
+                Username = username,
+                Email = email,
+                SenhaHash = senhaHash,
+                SenhaSalt = salt,
+                TipoUsuario = tipoUsuario
             };
 
-            var participanteResponse = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/participante", participante);
-            
-            if (!participanteResponse.IsSuccessStatusCode)
+            var response = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/usuario", newUser);
+
+            if (!response.IsSuccessStatusCode)
             {
-                string errorMessage = await participanteResponse.Content.ReadAsStringAsync();
-                throw new Exception($"API Error (Participante): {participanteResponse.StatusCode} - {errorMessage}");
+                string errorMessage = await response.Content.ReadAsStringAsync();
+                throw new Exception($"API Error: {response.StatusCode} - {errorMessage}");
             }
-        }
-        
-        // Se o usuário for um Organizador, inserir na tabela Organizador
-        if (tipoUsuario == "Organizador")
-        {
-            var organizador = new Organizador
-            {
-                Nome = "", // Definir nome apropriado depois
-                Contacto = "",
-                DataNascimento = DateTime.MinValue,
-                IdUsuario = createdUser.Id
-            };
 
-            var organizadorResponse = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/organizador", organizador);
+            var createdUser = await response.Content.ReadFromJsonAsync<UtilizadorAuth>();
+            if (createdUser == null)
+                throw new Exception("Failed to create user: No user data returned from API");
 
-            if (!organizadorResponse.IsSuccessStatusCode)
+            // Usando a factory para chamar o serviço adequado
+            var tipoService = _tipoUsuarioServiceFactory.GetService(tipoUsuario);
+            if (tipoService != null)
             {
-                string errorMessage = await organizadorResponse.Content.ReadAsStringAsync();
-                throw new Exception($"API Error (Organizador): {organizadorResponse.StatusCode} - {errorMessage}");
+                await tipoService.CriarRegistoEspecificoAsync(createdUser);
             }
-        }
+            else
+            {
+                throw new InvalidOperationException("Tipo de utilizador inválido.");
+            }
 
-        return createdUser;
-    }
+            return createdUser;
+        }
     
     public async Task<UtilizadorAuth?> AuthenticateUserAsync(string email, string password)
     {
@@ -135,54 +110,13 @@ public class utilizadorService
         string computedHash = HashPassword(password, user.SenhaSalt);
         return computedHash == user.SenhaHash ? user : null;
     }
-
-    public async Task<Participante?> ObterParticipante(int idUtilizador)
+    
+    public async Task<bool> UpdateUserAsync(string currentEmail, string newEmail)
     {
-        var response = await _httpClient.GetAsync($"https://localhost:44343/api/participante/{idUtilizador}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        return await response.Content.ReadFromJsonAsync<Participante>();
-    }
-
-    public async Task<Organizador?> ObterOrganizador(int idUsuario)
-    {
-        var response = await _httpClient.GetAsync($"https://localhost:44343/api/organizador/{idUsuario}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        return await response.Content.ReadFromJsonAsync<Organizador>();
-    }
-
-    public async Task<bool> AtualizarParticipante(int id, string nome, string contacto, DateTime dataNascimento)
-    {
-        var response = await _httpClient.PutAsJsonAsync($"https://localhost:44343/api/participante/{id}", new
-        {
-            Nome = nome,
-            Contacto = contacto,
-            DataNascimento = dataNascimento
-        });
-
+        var response = await _httpClient.PutAsJsonAsync("/api/users/update", new { CurrentEmail = currentEmail, NewEmail = newEmail });
         return response.IsSuccessStatusCode;
     }
-
-    public async Task<bool> AtualizarOrganizador(int id, string nome, string contacto, DateTime dataNascimento)
-    {
-        var response = await _httpClient.PutAsJsonAsync($"https://localhost:44343/api/organizador/{id}", new
-        {
-            Nome = nome,
-            Contacto = contacto,
-            DataNascimento = dataNascimento
-        });
-
-        return response.IsSuccessStatusCode;
-    }
+    
 
     private string HashPassword(string password, string salt)
     {
@@ -193,19 +127,4 @@ public class utilizadorService
             return Convert.ToBase64String(hashBytes);
         }
     }
-    
-    public async Task<UtilizadorAuth?> ObterPorEmail(string email)
-    {
-        var response = await _httpClient.GetAsync($"https://localhost:44343/api/usuario?email={email}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            // Retorna null caso não encontre o utilizador ou ocorra algum erro na requisição
-            return null;
-        }
-
-        return await response.Content.ReadFromJsonAsync<UtilizadorAuth>();
-    }
-    
 }
-
