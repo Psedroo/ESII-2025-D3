@@ -1,6 +1,7 @@
 ﻿@page "/participante"
 
 @using ES2Real.Components.Layout
+@inject UserSessionService UserSessionService
 
 <h3></h3>
 
@@ -28,11 +29,22 @@
 </div>
 
 @code {
-    private int currentCount = 0;
+    [Inject] UserSessionService AuthStateProvider { get; set; }
+    private UtilizadorAuth? usuarioLogado;
 
-    private void IncrementCount()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        currentCount++;
-    }
+        if (firstRender)
+        {
+            usuarioLogado = UserSessionService.GetUsuario();
+            Console.WriteLine($"Usuário logado: {usuarioLogado?.Email}, Tipo de Usuário: {usuarioLogado?.TipoUsuario}");
+        
+            if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Participante")
+            {
+                await Task.Delay(1500);
+            }
 
+            StateHasChanged();  // Garantir que o estado da UI seja atualizado antes de realizar a navegação
+        }
+    }
 }

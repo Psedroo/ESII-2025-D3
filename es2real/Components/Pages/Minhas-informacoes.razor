@@ -1,42 +1,52 @@
-﻿@page "/Minhas-informacoes"
+﻿@page "/minhas-informacoes"
 
-@using ES2Real.Components.Layout
-
-<h3></h3>
-
-<BackButton />
-
-
-@using System.Security.Claims
-@using ES2Real.Data
-@using Microsoft.AspNetCore.Components.Authorization
-@inject utilizadorService UtilizadorService
-@inject AuthenticationStateProvider AuthStateProvider
+@inject UserSessionService UserSessionService
+@inject NavigationManager Navigation
 
 @rendermode InteractiveServer
-<PageTitle>Counter</PageTitle>
+<PageTitle>Minhas Informações</PageTitle>
 
-<h1>Informacoes</h1>
+<h1>Minhas Informações</h1>
 
+@if (!carregando && usuarioLogado == null)
+{
+    <p class="text-danger text-center mt-5">Sessão expirada. Redirecionando...</p>
+}
+else if (!carregando && usuarioLogado != null)
+{
+    <div class="text-center">
+        <p><strong>Email:</strong> @usuarioLogado.Email</p>
+        <p><strong>Tipo de Usuário:</strong> @usuarioLogado.TipoUsuario</p>
+    </div>
+}
+else
+{
+    <p class="text-center">Carregando...</p>
+}
 
 @code {
-    private UserEditModel userModel = new();
+    private UtilizadorAuth? usuarioLogado;
+    private bool carregando = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        if (firstRender)
         {
-            userModel.Email = user.FindFirst(ClaimTypes.Name)?.Value;
+            // Recupera o usuário da sessão
+            usuarioLogado = UserSessionService.GetUsuario();
+            Console.WriteLine($"Usuário logado: {usuarioLogado?.Email ?? "Nenhum usuário encontrado"}");
+
+            if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Organizador")
+            {
+                // Redireciona para o login se não estiver logado ou não for Organizador
+                await Task.Delay(1500);  // Aguarde um pouco para o usuário ver a mensagem de erro
+            }
+            else
+            {
+                // Se o usuário estiver logado e for Organizador, mostre as informações
+                carregando = false;
+                StateHasChanged(); // Atualiza a UI para mostrar as informações
+            }
         }
     }
-    
-
-    public class UserEditModel
-    {
-        public string Email { get; set; }
-        public string NewEmail { get; set; }
-    }
-}
 }

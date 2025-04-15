@@ -1,11 +1,10 @@
 using ES2Real.Components;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Blazored.LocalStorage;
 using ES2Real.Data;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.OpenApi.Models; // Adicionado para o Swagger
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,9 +32,12 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<utilizadorService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:44343/") });
 
-builder.Services.AddScoped<UserSessionService>();
+builder.Services.AddScoped<ProtectedLocalStorage>();
+builder.Services.AddSingleton<UserSessionService>();
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
+builder.Services.AddBlazoredLocalStorage();
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();

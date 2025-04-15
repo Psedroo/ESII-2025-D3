@@ -1,18 +1,27 @@
-﻿namespace ES2Real.Data;
-
-public class UserSessionService
+﻿public class UserSessionService
 {
-    private UtilizadorAuth? _usuarioAtual;
+    private UtilizadorAuth? _usuarioLogado;
 
-    public UtilizadorAuth? UsuarioAtual => _usuarioAtual;
+    public UtilizadorAuth? UsuarioLogado => _usuarioLogado;
 
-    public void SetUsuario(UtilizadorAuth utilizador)
+    public void SetUsuario(UtilizadorAuth usuario)
     {
-        _usuarioAtual = utilizador;
+        _usuarioLogado = usuario;
+        Console.WriteLine(_usuarioLogado.Email);
     }
 
-    public void Logout()
+    public void ClearUsuario()
     {
-        _usuarioAtual = null;
+        _usuarioLogado = null;
+    }
+    
+    public UtilizadorAuth? GetUsuario()
+    {
+        if (_usuarioLogado == null)
+        {
+            Console.WriteLine("Usuário não logado.");
+            return null;
+        }
+        return _usuarioLogado;
     }
 }

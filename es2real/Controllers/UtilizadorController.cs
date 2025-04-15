@@ -25,30 +25,53 @@ public class UtilizadorController : ControllerBase
         return Ok(users);
     }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<UtilizadorAuth>> GetUser(int id)
+    // GET: api/organizador/byUserId/{utilizadorId}
+    [HttpGet("byUserId/{utilizadorId}")]
+    public async Task<ActionResult<Organizador>> GetOrganizadorByUserId(int utilizadorId)
     {
-        var User = await _context.UtilizadorAuth.FindAsync(id);
+        var organizador = await _context.Organizadores
+            .FirstOrDefaultAsync(o => o.IdUsuario == utilizadorId);
 
-        if (User == null)
+        if (organizador == null)
         {
             return NotFound();
         }
 
-        return User;
+        return organizador;
     }
-    [HttpPost]  
-    public async Task<ActionResult<UtilizadorAuth>> SetUser([FromBody]UtilizadorAuth utilizador)
+
+    // PUT: api/usuario/{id}
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UtilizadorAuth utilizador)
     {
-        if (utilizador == null)
-        {   
-            return BadRequest("Invalid user data.");
+        if (id != utilizador.Id)
+        {
+            return BadRequest("User ID mismatch.");
         }
 
-        _context.UtilizadorAuth.Add(utilizador);
-        await _context.SaveChangesAsync();
+        _context.Entry(utilizador).State = EntityState.Modified;
 
-        return CreatedAtAction(nameof(GetUser), new { id = utilizador.Id }, utilizador);
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!UserExists(id))
+            {
+                return NotFound();
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        return NoContent();
     }
-    
+
+    private bool UserExists(int id)
+    {
+        return _context.UtilizadorAuth.Any(e => e.Id == id);
+    }
 }

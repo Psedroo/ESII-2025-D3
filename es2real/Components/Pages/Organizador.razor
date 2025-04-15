@@ -1,31 +1,53 @@
 ﻿@page "/organizador"
 
 @using ES2Real.Components.Layout
+@inject UserSessionService UserSessionService
+@inject NavigationManager Navigation
 
 <h3></h3>
 
 <BackButton />
 
 @rendermode InteractiveServer
-@inject NavigationManager Navigation
 
-<div class="container mt-5">
-    <h2 class="text-center">Área do Organizador</h2>
+@if (usuarioLogado == null)
+{
+    <p class="text-danger text-center mt-5">Sessão expirada. Redirecionando...</p>
+}
+else
+{
+    <div class="container mt-5">
+        <h2 class="text-center">Área do Organizador</h2>
 
-    <div class="row mt-4 text-center">
-        <div class="col-md-4">
-            <a href="/Eventos" class="btn btn-primary btn-lg w-100">Gerir Eventos</a>
-        </div>
-        <div class="col-md-4">
-            <a href="/Participantes" class="btn btn-secondary btn-lg w-100">Gerir Participantes</a>
-        </div>
-        <div class="col-md-4">
-            <a href="/Relatorios" class="btn btn-success btn-lg w-100">Relatórios</a>
+        <div class="row mt-4 text-center">
+            <div class="col-md-4">
+                <a href="/Eventos" class="btn btn-primary btn-lg w-100">Gerir Eventos</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Participantes" class="btn btn-secondary btn-lg w-100">Gerir Participantes</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Relatorios" class="btn btn-success btn-lg w-100">Relatórios</a>
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
-   
-    
+    private UtilizadorAuth? usuarioLogado;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            usuarioLogado = UserSessionService.GetUsuario();
+            Console.WriteLine($"Usuário logado: {usuarioLogado?.Email}, Tipo de Usuário: {usuarioLogado?.TipoUsuario}");
+            
+            if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Organizador")
+            {
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/login", true);
+            }
+        }
+    }
 }

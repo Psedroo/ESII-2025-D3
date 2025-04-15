@@ -12,8 +12,8 @@ public class utilizadorService
         _httpClient = httpClient;
     }
 
-    public async Task<UtilizadorAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario){
-        
+    public async Task<UtilizadorAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario)
+    {
         var usernameCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?username={username}");
         var emailCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?email={email}");
 
@@ -105,8 +105,7 @@ public class utilizadorService
         }
 
         return createdUser;
-}
-
+    }
     
     public async Task<UtilizadorAuth?> AuthenticateUserAsync(string email, string password)
     {
@@ -136,13 +135,54 @@ public class utilizadorService
         string computedHash = HashPassword(password, user.SenhaSalt);
         return computedHash == user.SenhaHash ? user : null;
     }
-    
-    public async Task<bool> UpdateUserAsync(string currentEmail, string newEmail)
+
+    public async Task<Participante?> ObterParticipante(int idUtilizador)
     {
-        var response = await _httpClient.PutAsJsonAsync("/api/users/update", new { CurrentEmail = currentEmail, NewEmail = newEmail });
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/participante/{idUtilizador}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<Participante>();
+    }
+
+    public async Task<Organizador?> ObterOrganizador(int idUsuario)
+    {
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/organizador/{idUsuario}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<Organizador>();
+    }
+
+    public async Task<bool> AtualizarParticipante(int id, string nome, string contacto, DateTime dataNascimento)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"https://localhost:44343/api/participante/{id}", new
+        {
+            Nome = nome,
+            Contacto = contacto,
+            DataNascimento = dataNascimento
+        });
+
         return response.IsSuccessStatusCode;
     }
-    
+
+    public async Task<bool> AtualizarOrganizador(int id, string nome, string contacto, DateTime dataNascimento)
+    {
+        var response = await _httpClient.PutAsJsonAsync($"https://localhost:44343/api/organizador/{id}", new
+        {
+            Nome = nome,
+            Contacto = contacto,
+            DataNascimento = dataNascimento
+        });
+
+        return response.IsSuccessStatusCode;
+    }
 
     private string HashPassword(string password, string salt)
     {
@@ -153,4 +193,19 @@ public class utilizadorService
             return Convert.ToBase64String(hashBytes);
         }
     }
+    
+    public async Task<UtilizadorAuth?> ObterPorEmail(string email)
+    {
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/usuario?email={email}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            // Retorna null caso não encontre o utilizador ou ocorra algum erro na requisição
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<UtilizadorAuth>();
+    }
+    
 }
+

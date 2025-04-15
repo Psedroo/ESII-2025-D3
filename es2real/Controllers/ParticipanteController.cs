@@ -1,17 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 [Route("api/participante")]
 [ApiController]
@@ -52,7 +40,23 @@ public class ParticipanteController : ControllerBase
 
         return CreatedAtAction(nameof(GetParticipante), new { id = participante.Id }, participante);
     }
+    
+    // GET: api/participante/byUserId/{utilizadorId}
+    [HttpGet("byUserId/{utilizadorId}")]
+    public async Task<ActionResult<Participante>> GetParticipanteByUserId(int utilizadorId)
+    {
+        var participante = await _context.Participantes
+            .Include(p => p.Utilizador)  // Incluir as informações do Utilizador
+            .FirstOrDefaultAsync(p => p.IdUtilizador == utilizadorId);
 
+        if (participante == null)
+        {
+            return NotFound();
+        }
+
+        return participante;
+    }
+    
     // PUT: api/participante/{id}
     [HttpPut("{id}")]
     public async Task<IActionResult> PutParticipante(int id, Participante participante)
@@ -82,7 +86,7 @@ public class ParticipanteController : ControllerBase
 
         return NoContent();
     }
-
+    
     // DELETE: api/participante/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteParticipante(int id)
