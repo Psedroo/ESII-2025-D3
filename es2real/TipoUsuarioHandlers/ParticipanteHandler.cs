@@ -1,3 +1,5 @@
+using ES2Real.Models;
+
 namespace ES2Real.TipoUsuarioHandlers;
 using ES2Real.Interfaces;
 

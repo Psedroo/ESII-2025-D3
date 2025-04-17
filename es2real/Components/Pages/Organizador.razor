@@ -3,6 +3,7 @@
 @using ES2Real.Components.Layout
 @inject UserSessionService UserSessionService
 @inject NavigationManager Navigation
+@inject UserSessionService AuthStateProvider
 
 <h3></h3>
 
@@ -10,12 +11,7 @@
 
 @rendermode InteractiveServer
 
-@if (usuarioLogado == null)
-{
-    <p class="text-danger text-center mt-5">Sessão expirada. Redirecionando...</p>
-}
-else
-{
+
     <div class="container mt-5">
         <h2 class="text-center">Área do Organizador</h2>
 
@@ -29,25 +25,25 @@ else
             <div class="col-md-4">
                 <a href="/Relatorios" class="btn btn-success btn-lg w-100">Relatórios</a>
             </div>
+            <div class="col-md-4">
+                <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
+            </div>
         </div>
     </div>
-}
+
 
 @code {
-    private UtilizadorAuth? usuarioLogado;
+    [Parameter]
+    public int id { get; set; }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
+        var usuarioLogado = AuthStateProvider.UsuarioAtual;
+
+        if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Organizador")
         {
-            usuarioLogado = UserSessionService.GetUsuario();
-            Console.WriteLine($"Usuário logado: {usuarioLogado?.Email}, Tipo de Usuário: {usuarioLogado?.TipoUsuario}");
-            
-            if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Organizador")
-            {
-                await Task.Delay(1500);
-                Navigation.NavigateTo("/login", true);
-            }
+            // Redirect to login if the user is not logged in or is not a 'Participante'
+            Navigation.NavigateTo("/login");
         }
     }
 }

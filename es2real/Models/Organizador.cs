@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+namespace ES2Real.Models;  // This is the namespace you need
 public class Organizador
 {
     [Key]

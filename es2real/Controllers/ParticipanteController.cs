@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ES2Real.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [Route("api/participante")]
@@ -56,36 +57,7 @@ public class ParticipanteController : ControllerBase
 
         return participante;
     }
-    
-    // PUT: api/participante/{id}
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutParticipante(int id, Participante participante)
-    {
-        if (id != participante.Id)
-        {
-            return BadRequest();
-        }
 
-        _context.Entry(participante).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Participantes.Any(e => e.Id == id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
-    }
     
     // DELETE: api/participante/{id}
     [HttpDelete("{id}")]
@@ -101,5 +73,36 @@ public class ParticipanteController : ControllerBase
         await _context.SaveChangesAsync();
 
         return NoContent();
+    }
+    
+    
+    [HttpPut]
+    public async Task<IActionResult> AtualizarParticipante([FromQuery] int id, [FromBody] Participante participanteAtualizado)
+    {
+        if (participanteAtualizado == null || id <= 0)
+        {
+            return BadRequest("Dados inválidos.");
+        }
+
+        var participanteExistente = await _context.Participantes.FindAsync(id);
+        if (participanteExistente == null)
+        {
+            return NotFound($"Participante com ID {id} não encontrado.");
+        }
+
+        // Atualiza os campos desejados
+        participanteExistente.Nome = participanteAtualizado.Nome;
+        participanteExistente.Contacto = participanteAtualizado.Contacto;
+        participanteExistente.DataNascimento = participanteAtualizado.DataNascimento;
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            return Ok("Participante atualizado com sucesso.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Erro ao atualizar: {ex.Message}");
+        }
     }
 }

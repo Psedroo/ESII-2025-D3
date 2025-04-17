@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using ES2Real.Models;
 
 public class Bilhete_Participante
 {

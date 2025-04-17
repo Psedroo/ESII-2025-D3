@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using ES2Real.Interfaces;
+using ES2Real.Models;
 
 public class utilizadorService
 {
@@ -91,55 +92,119 @@ public class utilizadorService
         string computedHash = HashPassword(password, user.SenhaSalt);
         return computedHash == user.SenhaHash ? user : null;
     }
-
-    public async Task<Participante?> ObterParticipante(int idUtilizador)
+    
+    
+    public async Task<List<Participante>?> ObterParticipantes()
     {
-        var response = await _httpClient.GetAsync($"https://localhost:44343/api/participante/{idUtilizador}");
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/participante");
 
         if (!response.IsSuccessStatusCode)
         {
-            return null;
+            return null;  // Se a resposta não for bem-sucedida, retorne null
         }
 
-        return await response.Content.ReadFromJsonAsync<Participante>();
+        // Agora, deserializa a resposta como uma lista de participantes
+        return await response.Content.ReadFromJsonAsync<List<Participante>>();
     }
 
-    public async Task<Organizador?> ObterOrganizador(int idUsuario)
+    
+    public async Task<List<Organizador>?> ObterOrganizadores()
     {
-        var response = await _httpClient.GetAsync($"https://localhost:44343/api/organizador/{idUsuario}");
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/organizador");
 
         if (!response.IsSuccessStatusCode)
         {
-            return null;
+            return null;  // Se a resposta da API não for bem-sucedida, retorne null
         }
-
-        return await response.Content.ReadFromJsonAsync<Organizador>();
+        
+        return await response.Content.ReadFromJsonAsync<List<Organizador>>();
     }
 
-    public async Task<bool> AtualizarParticipante(int id, string nome, string contacto, DateTime dataNascimento)
+    
+
+    
+
+    public async Task<bool> AtualizarParticipante(int idparticipante, string nome, string contacto, DateTime dataNascimento)
     {
-        var response = await _httpClient.PutAsJsonAsync($"https://localhost:44343/api/participante/{id}", new
+        if (string.IsNullOrEmpty(nome) || string.IsNullOrEmpty(contacto))
         {
-            Nome = nome,
-            Contacto = contacto,
-            DataNascimento = dataNascimento
-        });
+            Console.WriteLine("Erro: Nome ou Contacto não podem estar vazios.");
+            return false;
+        }
+
+        if (dataNascimento < new DateTime(1900, 1, 1))
+        {
+            Console.WriteLine("Erro: Data de nascimento inválida.");
+            return false;
+        }
+
+
+        var response = await _httpClient.PutAsJsonAsync(
+            $"https://localhost:44343/api/participante?id={idparticipante}", new
+            {
+                Nome = nome,
+                Contacto = contacto,
+                DataNascimento = dataNascimento
+            });
+
+
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao atualizar participante. StatusCode: {response.StatusCode}, Erro: {errorContent}");
+        }
+        else
+        {
+            Console.WriteLine("Participante atualizado com sucesso.");
+        }
 
         return response.IsSuccessStatusCode;
     }
 
-    public async Task<bool> AtualizarOrganizador(int id, string nome, string contacto, DateTime dataNascimento)
+
+
+
+
+
+    public async Task<bool> AtualizarOrganizador(int idorganizador, string nome, string contacto, DateTime dataNascimento)
     {
-        var response = await _httpClient.PutAsJsonAsync($"https://localhost:44343/api/organizador/{id}", new
+        if (string.IsNullOrEmpty(nome) || string.IsNullOrEmpty(contacto))
         {
-            Nome = nome,
-            Contacto = contacto,
-            DataNascimento = dataNascimento
-        });
+            Console.WriteLine("Erro: Nome ou Contacto não podem estar vazios.");
+            return false;
+        }
+
+        if (dataNascimento < new DateTime(1900, 1, 1))
+        {
+            Console.WriteLine("Erro: Data de nascimento inválida.");
+            return false;
+        }
+        
+        var response = await _httpClient.PutAsJsonAsync(
+            $"https://localhost:44343/api/organizador?id={idorganizador}", new
+            {
+                Nome = nome,
+                Contacto = contacto,
+                DataNascimento = dataNascimento
+            });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao atualizar organizador. StatusCode: {response.StatusCode}, Erro: {errorContent}");
+        }
+        else
+        {
+            Console.WriteLine("Organizador atualizado com sucesso.");
+        }
 
         return response.IsSuccessStatusCode;
     }
 
+
+
+    
     private string HashPassword(string password, string salt)
     {
         using (var sha256 = SHA256.Create())
