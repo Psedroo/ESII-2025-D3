@@ -2,39 +2,31 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using ES2Real.Interfaces;
+using ES2Real.Models;
 
 public class utilizadorService
 {
     private readonly HttpClient _httpClient;
+    private readonly IEnumerable<ITipoUsuarioHandler> _userHandlers;
 
-    public utilizadorService(HttpClient httpClient)
+    public utilizadorService(HttpClient httpClient, IEnumerable<ITipoUsuarioHandler> userHandlers)
     {
         _httpClient = httpClient;
+        _userHandlers = userHandlers;
     }
 
-    public async Task<UtilizadorAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario){
-        
+    public async Task<UtilizadorAuth?> RegisterUserAsync(string username, string email, string password, string tipoUsuario)
+    {
         var usernameCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?username={username}");
         var emailCheck = await _httpClient.GetAsync($"https://localhost:44343/api/auth/exists?email={email}");
 
-        if (usernameCheck.IsSuccessStatusCode)
-        {
-            bool usernameExists = await usernameCheck.Content.ReadFromJsonAsync<bool>();
-            if (usernameExists)
-            {
-                throw new InvalidOperationException("The username is already taken.");
-            }
-        }
+        if (usernameCheck.IsSuccessStatusCode && await usernameCheck.Content.ReadFromJsonAsync<bool>())
+            throw new InvalidOperationException("The username is already taken.");
 
-        if (emailCheck.IsSuccessStatusCode)
-        {
-            bool emailExists = await emailCheck.Content.ReadFromJsonAsync<bool>();
-            if (emailExists)
-            {
-                throw new InvalidOperationException("The email is already registered.");
-            }
-        }
-        
+        if (emailCheck.IsSuccessStatusCode && await emailCheck.Content.ReadFromJsonAsync<bool>())
+            throw new InvalidOperationException("The email is already registered.");
+
         byte[] saltBytes = new byte[16];
         using (var rng = new RNGCryptoServiceProvider())
         {
@@ -60,53 +52,17 @@ public class utilizadorService
             throw new Exception($"API Error: {response.StatusCode} - {errorMessage}");
         }
 
-        var createdUser = await response.Content.ReadFromJsonAsync<UtilizadorAuth>();
-        if (createdUser == null)
-            throw new Exception("Failed to create user: No user data returned from API");
+        var createdUser = await response.Content.ReadFromJsonAsync<UtilizadorAuth>()
+                          ?? throw new Exception("Failed to create user: No user data returned from API");
 
-        // Se o usuário for um Participante, inserir na tabela Participante
-        if (tipoUsuario == "Participante")
+        var handler = _userHandlers.FirstOrDefault(h => h.TipoUsuarioSuportado == tipoUsuario);
+        if (handler != null)
         {
-            var participante = new Participante
-            {
-                Nome = "", // Definir nome apropriado depois
-                Contacto = "",
-                DataNascimento = DateTime.MinValue,
-                IdUtilizador = createdUser.Id
-            };
-
-            var participanteResponse = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/participante", participante);
-            
-            if (!participanteResponse.IsSuccessStatusCode)
-            {
-                string errorMessage = await participanteResponse.Content.ReadAsStringAsync();
-                throw new Exception($"API Error (Participante): {participanteResponse.StatusCode} - {errorMessage}");
-            }
-        }
-        
-        // Se o usuário for um Organizador, inserir na tabela Organizador
-        if (tipoUsuario == "Organizador")
-        {
-            var organizador = new Organizador
-            {
-                Nome = "", // Definir nome apropriado depois
-                Contacto = "",
-                DataNascimento = DateTime.MinValue,
-                IdUsuario = createdUser.Id
-            };
-
-            var organizadorResponse = await _httpClient.PostAsJsonAsync("https://localhost:44343/api/organizador", organizador);
-
-            if (!organizadorResponse.IsSuccessStatusCode)
-            {
-                string errorMessage = await organizadorResponse.Content.ReadAsStringAsync();
-                throw new Exception($"API Error (Organizador): {organizadorResponse.StatusCode} - {errorMessage}");
-            }
+            await handler.CriarDadosEspecificosAsync(createdUser);
         }
 
         return createdUser;
-}
-
+    }
     
     public async Task<UtilizadorAuth?> AuthenticateUserAsync(string email, string password)
     {
@@ -137,13 +93,118 @@ public class utilizadorService
         return computedHash == user.SenhaHash ? user : null;
     }
     
-    public async Task<bool> UpdateUserAsync(string currentEmail, string newEmail)
+    
+    public async Task<List<Participante>?> ObterParticipantes()
     {
-        var response = await _httpClient.PutAsJsonAsync("/api/users/update", new { CurrentEmail = currentEmail, NewEmail = newEmail });
-        return response.IsSuccessStatusCode;
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/participante");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;  // Se a resposta não for bem-sucedida, retorne null
+        }
+
+        // Agora, deserializa a resposta como uma lista de participantes
+        return await response.Content.ReadFromJsonAsync<List<Participante>>();
     }
+
+    
+    public async Task<List<Organizador>?> ObterOrganizadores()
+    {
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/organizador");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;  // Se a resposta da API não for bem-sucedida, retorne null
+        }
+        
+        return await response.Content.ReadFromJsonAsync<List<Organizador>>();
+    }
+
     
 
+    
+
+    public async Task<bool> AtualizarParticipante(int idparticipante, string nome, string contacto, DateTime dataNascimento)
+    {
+        if (string.IsNullOrEmpty(nome) || string.IsNullOrEmpty(contacto))
+        {
+            Console.WriteLine("Erro: Nome ou Contacto não podem estar vazios.");
+            return false;
+        }
+
+        if (dataNascimento < new DateTime(1900, 1, 1))
+        {
+            Console.WriteLine("Erro: Data de nascimento inválida.");
+            return false;
+        }
+
+
+        var response = await _httpClient.PutAsJsonAsync(
+            $"https://localhost:44343/api/participante?id={idparticipante}", new
+            {
+                Nome = nome,
+                Contacto = contacto,
+                DataNascimento = dataNascimento
+            });
+
+
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao atualizar participante. StatusCode: {response.StatusCode}, Erro: {errorContent}");
+        }
+        else
+        {
+            Console.WriteLine("Participante atualizado com sucesso.");
+        }
+
+        return response.IsSuccessStatusCode;
+    }
+
+
+
+
+
+
+    public async Task<bool> AtualizarOrganizador(int idorganizador, string nome, string contacto, DateTime dataNascimento)
+    {
+        if (string.IsNullOrEmpty(nome) || string.IsNullOrEmpty(contacto))
+        {
+            Console.WriteLine("Erro: Nome ou Contacto não podem estar vazios.");
+            return false;
+        }
+
+        if (dataNascimento < new DateTime(1900, 1, 1))
+        {
+            Console.WriteLine("Erro: Data de nascimento inválida.");
+            return false;
+        }
+        
+        var response = await _httpClient.PutAsJsonAsync(
+            $"https://localhost:44343/api/organizador?id={idorganizador}", new
+            {
+                Nome = nome,
+                Contacto = contacto,
+                DataNascimento = dataNascimento
+            });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erro ao atualizar organizador. StatusCode: {response.StatusCode}, Erro: {errorContent}");
+        }
+        else
+        {
+            Console.WriteLine("Organizador atualizado com sucesso.");
+        }
+
+        return response.IsSuccessStatusCode;
+    }
+
+
+
+    
     private string HashPassword(string password, string salt)
     {
         using (var sha256 = SHA256.Create())
@@ -153,4 +214,19 @@ public class utilizadorService
             return Convert.ToBase64String(hashBytes);
         }
     }
+    
+    public async Task<UtilizadorAuth?> ObterPorEmail(string email)
+    {
+        var response = await _httpClient.GetAsync($"https://localhost:44343/api/usuario?email={email}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            // Retorna null caso não encontre o utilizador ou ocorra algum erro na requisição
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<UtilizadorAuth>();
+    }
+    
 }
+

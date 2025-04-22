@@ -1,54 +1,57 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ES2Real.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace ES2Real.Controllers;
-
-[Route("api/usuario")]
-[ApiController]
-public class UtilizadorController : ControllerBase
+namespace ES2Real.Controllers
 {
-    private readonly ApplicationDbContext _context;
-
-    public UtilizadorController(ApplicationDbContext context)
+    [Route("api/usuario")]
+    [ApiController]
+    public class UtilizadorController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<UtilizadorAuth>>> GetUsers()
-    {
-        var users = await _context.UtilizadorAuth.ToListAsync();
-        if (!users.Any())
+        public UtilizadorController(ApplicationDbContext context)
         {
-            return NotFound("No users found.");
+            _context = context;
         }
-        return Ok(users);
-    }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<UtilizadorAuth>> GetUser(int id)
-    {
-        var User = await _context.UtilizadorAuth.FindAsync(id);
-
-        if (User == null)
+        // Create User
+        [HttpPost]
+        public async Task<ActionResult<UtilizadorAuth>> CreateUser([FromBody] UtilizadorAuth newUser)
         {
-            return NotFound();
+            _context.UtilizadorAuth.Add(newUser);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetUsers), new { id = newUser.Id }, newUser);
         }
 
-        return User;
-    }
-    [HttpPost]  
-    public async Task<ActionResult<UtilizadorAuth>> SetUser([FromBody]UtilizadorAuth utilizador)
-    {
-        if (utilizador == null)
-        {   
-            return BadRequest("Invalid user data.");
+        // Get All Users
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<UtilizadorAuth>>> GetUsers()
+        {
+            var users = await _context.UtilizadorAuth.ToListAsync();
+            if (!users.Any())
+            {
+                return NotFound("No users found.");
+            }
+
+            return Ok(users);
         }
 
-        _context.UtilizadorAuth.Add(utilizador);
-        await _context.SaveChangesAsync();
+        // Get Organizador by UserId
+        [HttpGet("byUserId/{utilizadorId}")]
+        public async Task<ActionResult<Organizador>> GetOrganizadorByUserId(int utilizadorId)
+        {
+            var organizador = await _context.Organizadores
+                .FirstOrDefaultAsync(o => o.IdUsuario == utilizadorId);
 
-        return CreatedAtAction(nameof(GetUser), new { id = utilizador.Id }, utilizador);
+            if (organizador == null)
+            {
+                return NotFound();
+            }
+
+            return organizador;
+        }
+
     }
-    
 }

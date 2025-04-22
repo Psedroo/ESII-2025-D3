@@ -1,42 +1,214 @@
-﻿@page "/Minhas-informacoes"
+﻿@page "/minhas-informacoes"
 
-@using ES2Real.Components.Layout
-
-<h3></h3>
-
-<BackButton />
-
-
-@using System.Security.Claims
-@using ES2Real.Data
-@using Microsoft.AspNetCore.Components.Authorization
+@inject UserSessionService UserSessionService
 @inject utilizadorService UtilizadorService
-@inject AuthenticationStateProvider AuthStateProvider
+@using ES2Real.Models
 
 @rendermode InteractiveServer
-<PageTitle>Counter</PageTitle>
+<PageTitle>Minhas Informações</PageTitle>
 
-<h1>Informacoes</h1>
+<h1>Minhas Informações</h1>
 
+@if (usuarioLogado == null)
+{
+    <p>Carregando informações do usuário...</p>
+}
+else
+{
+    @if (isEditing)
+    {
+        <p><strong>Email:</strong> @usuarioLogado.Email</p>
+        <p><strong>Username:</strong> @usuarioLogado.Username</p>
+
+        <p><strong>Tipo de Usuário:</strong> @usuarioLogado.TipoUsuario</p>
+
+        @if (usuarioLogado.TipoUsuario == "Organizador" && organizador != null)
+        {
+            <h3>Informações do Organizador</h3>
+            <div class="mb-4">
+                <label><strong>Nome:</strong></label>
+                <input type="text" class="form-control" @bind="organizador.Nome" />
+            </div>
+            <div class="mb-4">
+                <label><strong>Contacto:</strong></label>
+                <input type="text" class="form-control" @bind="organizador.Contacto" />
+            </div>
+            <div class="mb-4">
+                <label><strong>Data de Nascimento:</strong></label>
+                <input type="date" class="form-control" @bind="organizador.DataNascimento" />
+            </div>
+        }
+        else if (usuarioLogado.TipoUsuario == "Participante" && participante != null)
+        {
+            <h3>Informações do Participante</h3>
+            <div class="mb-4">
+                <label><strong>Nome:</strong></label>
+                <input type="text" class="form-control" @bind="participante.Nome" />
+            </div>
+            <div class="mb-4">
+                <label><strong>Contacto:</strong></label>
+                <input type="text" class="form-control" @bind="participante.Contacto" />
+            </div>
+            <div class="mb-4">
+                <label><strong>Data de Nascimento:</strong></label>
+                <input type="date" class="form-control" @bind="participante.DataNascimento" />
+            </div>
+        }
+
+        <button class="btn btn-primary" @onclick="SaveChanges">Salvar Alterações</button>
+        <button class="btn btn-secondary" @onclick="CancelEdit">Cancelar</button>
+    }
+    else
+    {
+        <p><strong>Email:</strong> @usuarioLogado.Email</p>
+        <p><strong>Username:</strong> @usuarioLogado.Username</p>
+        <p><strong>Tipo de Usuário:</strong> @usuarioLogado.TipoUsuario</p>
+
+        @if (usuarioLogado.TipoUsuario == "Organizador" && organizador != null)
+        {
+            <h3>Informações do Organizador</h3>
+            <p><strong>Nome:</strong> @organizador.Nome</p>
+            <p><strong>Contacto:</strong> @organizador.Contacto</p>
+            <p><strong>Data de Nascimento:</strong> @organizador.DataNascimento.ToShortDateString()</p>
+        }
+        else if (usuarioLogado.TipoUsuario == "Participante" && participante != null)
+        {
+            <h3>Informações do Participante</h3>
+            <p><strong>Nome:</strong> @participante.Nome</p>
+            <p><strong>Contacto:</strong> @participante.Contacto</p>
+            <p><strong>Data de Nascimento:</strong> @participante.DataNascimento.ToShortDateString()</p>
+        }
+
+        <button class="btn btn-primary" @onclick="EnableEdit">Editar Informações</button>
+    }
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <p class="alert alert-info">@message</p>
+    }
+}
 
 @code {
-    private UserEditModel userModel = new();
+    private UtilizadorAuth? usuarioLogado;
+    private ES2Real.Models.Organizador? organizador;
+    private ES2Real.Models.Participante? participante;
+    private bool isEditing = false;
+    private string message = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity.IsAuthenticated)
+        await LoadUserData();
+    }
+
+    private async Task LoadUserData()
+    {
+        usuarioLogado = UserSessionService.GetUsuario();
+
+        if (usuarioLogado != null)
         {
-            userModel.Email = user.FindFirst(ClaimTypes.Name)?.Value;
+            if (usuarioLogado.TipoUsuario == "Organizador")
+            {
+                var organizadores = await UtilizadorService.ObterOrganizadores();
+                if (organizadores != null && organizadores.Count > 0)
+                {
+                    organizador = organizadores.FirstOrDefault(o => o.IdUsuario == usuarioLogado.Id);
+
+                    if (organizador != null)
+                    {
+                        if (organizador.DataNascimento == DateTime.MinValue)
+                        {
+                            organizador.DataNascimento = DateTime.Now;
+                        }
+                    }
+                }
+            }
+            else if (usuarioLogado.TipoUsuario == "Participante")
+            {
+                var participantes = await UtilizadorService.ObterParticipantes();
+
+                if (participantes != null && participantes.Count > 0)
+                {
+                    participante = participantes.FirstOrDefault(p => p.IdUtilizador == usuarioLogado.Id);
+
+                    if (participante != null)
+                    {
+                        if (participante.DataNascimento == DateTime.MinValue)
+                        {
+                            participante.DataNascimento = DateTime.Now;
+                        }
+                    }
+                }
+            }
         }
     }
-    
 
-    public class UserEditModel
+    private void EnableEdit()
     {
-        public string Email { get; set; }
-        public string NewEmail { get; set; }
+        isEditing = true;
+        message = string.Empty;
     }
-}
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        message = string.Empty;
+        _ = LoadUserData();
+    }
+
+    private async Task SaveChanges()
+    {
+        if (usuarioLogado == null)
+        {
+            message = "Erro: Usuário não encontrado.";
+            return;
+        }
+
+        try
+        {
+            // Update specific user type data
+            if (usuarioLogado.TipoUsuario == "Organizador" && organizador != null)
+            {
+                organizador.DataNascimento = organizador.DataNascimento.ToUniversalTime();
+                
+                var success = await UtilizadorService.AtualizarOrganizador(
+                    organizador.Id,
+                    organizador.Nome,
+                    organizador.Contacto,
+                    organizador.DataNascimento
+                );
+
+                if (!success)
+                {
+                    message = "Erro ao atualizar informações do organizador.";
+                    return;
+                }
+            }
+            else if (usuarioLogado.TipoUsuario == "Participante" && participante != null)
+            {
+                participante.DataNascimento = participante.DataNascimento.ToUniversalTime();
+                
+                var success = await UtilizadorService.AtualizarParticipante(
+                    participante.Id,  
+                    participante.Nome,
+                    participante.Contacto,
+                    participante.DataNascimento
+                );
+
+                if (!success)
+                {
+                    message = "Erro ao atualizar informações do participante.";
+                    return;
+                }
+            }
+
+
+            message = "Informações atualizadas com sucesso!";
+            isEditing = false;
+            await LoadUserData(); // Refresh data
+        }
+        catch (Exception ex)
+        {
+            message = $"Erro ao salvar alterações: {ex.Message}";
+        }
+    }
 }

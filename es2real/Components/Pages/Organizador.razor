@@ -1,31 +1,49 @@
 ﻿@page "/organizador"
 
 @using ES2Real.Components.Layout
+@inject UserSessionService UserSessionService
+@inject NavigationManager Navigation
+@inject UserSessionService AuthStateProvider
 
 <h3></h3>
 
 <BackButton />
 
 @rendermode InteractiveServer
-@inject NavigationManager Navigation
 
-<div class="container mt-5">
-    <h2 class="text-center">Área do Organizador</h2>
 
-    <div class="row mt-4 text-center">
-        <div class="col-md-4">
-            <a href="/Eventos" class="btn btn-primary btn-lg w-100">Gerir Eventos</a>
-        </div>
-        <div class="col-md-4">
-            <a href="/Participantes" class="btn btn-secondary btn-lg w-100">Gerir Participantes</a>
-        </div>
-        <div class="col-md-4">
-            <a href="/Relatorios" class="btn btn-success btn-lg w-100">Relatórios</a>
+    <div class="container mt-5">
+        <h2 class="text-center">Área do Organizador</h2>
+
+        <div class="row mt-4 text-center">
+            <div class="col-md-4">
+                <a href="/Eventos" class="btn btn-primary btn-lg w-100">Gerir Eventos</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Participantes" class="btn btn-secondary btn-lg w-100">Gerir Participantes</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Relatorios" class="btn btn-success btn-lg w-100">Relatórios</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
+            </div>
         </div>
     </div>
-</div>
+
 
 @code {
-   
-    
+    [Parameter]
+    public int id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuarioLogado = AuthStateProvider.UsuarioAtual;
+
+        if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Organizador")
+        {
+            // Redirect to login if the user is not logged in or is not a 'Participante'
+            Navigation.NavigateTo("/login");
+        }
+    }
 }

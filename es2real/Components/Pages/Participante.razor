@@ -1,46 +1,49 @@
 ﻿@page "/participante/{id:int}"
 @using ES2Real.Components.Layout
 @using ES2Real.Data
-
 @inject UserSessionService AuthStateProvider
-
-
-@if (AuthStateProvider.UsuarioAtual is not null)
-{
-    <p>Olá, @AuthStateProvider.UsuarioAtual.Username!</p>
-    <p>Email: @AuthStateProvider.UsuarioAtual.Email</p>
-}
-else
-{
-    <p>Nenhum utilizador autenticado.</p>
-}
-
-
+@inject NavigationManager Navigation
 
 <BackButton />
-
-
-@using Microsoft.EntityFrameworkCore.Metadata.Internal
-@rendermode InteractiveServer
-@inject NavigationManager Navigation
 
 <div class="container mt-5">
     <h2 class="text-center">Área do Participante</h2>
 
-    <div class="row mt-4 text-center">
-        <div class="col-md-4">
-            <a href="@($"/Inscricoes/{id}")" class="btn btn-primary btn-lg w-100">Inscrições</a>
+    @if (AuthStateProvider.UsuarioAtual != null)
+    {
+        <p>Olá, @AuthStateProvider.UsuarioAtual.Username!</p>
+        <p>Email: @AuthStateProvider.UsuarioAtual.Email</p>
+
+        <div class="row mt-4 text-center">
+            <div class="col-md-4">
+                <a href="@($"/Inscricoes/{id}")" class="btn btn-primary btn-lg w-100">Inscrições</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Meus-eventos" class="btn btn-success btn-lg w-100">Meus Eventos</a>
+            </div>
         </div>
-        <div class="col-md-4">
-            <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
-        </div>
-        <div class="col-md-4">
-            <a href="/Meus-eventos" class="btn btn-success btn-lg w-100">Meus Eventos</a>
-        </div>
-    </div>
+    }
+    else
+    {
+        <p>Nenhum utilizador autenticado.</p>
+    }
 </div>
 
 @code {
     [Parameter]
     public int id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var usuarioLogado = AuthStateProvider.UsuarioAtual;
+
+        if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Participante")
+        {
+            // Redirect to login if the user is not logged in or is not a 'Participante'
+            Navigation.NavigateTo("/login");
+        }
+    }
 }
