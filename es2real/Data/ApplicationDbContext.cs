@@ -1,5 +1,5 @@
 ﻿using ES2Real.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 public class ApplicationDbContext : DbContext
 {

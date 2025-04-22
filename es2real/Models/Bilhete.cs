@@ -18,9 +18,12 @@ public class Bilhete
     public string Descricao { get; set; } = string.Empty;
     public int Quantidade { get; set; }
     
+    public decimal Preco { get; set; }
+    
     [ForeignKey("Evento")]
     public int idEvento { get; set; }
-    public Evento? Evento { get; set; }
+
+    public Evento Evento { get; set; } = null!;
     
     public List<Bilhete_Participante> BilheteParticipante {get; set;} = new();
 }

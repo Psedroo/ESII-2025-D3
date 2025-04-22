@@ -25,10 +25,11 @@ public class OrganizadorController : ControllerBase
     {
         return await _context.Organizadores.ToListAsync();
     }
-    
-    
+
+
     [HttpPut]
-    public async Task<IActionResult> AtualizarOrganizador([FromQuery] int id, [FromBody] Organizador organizadorAtualizado)
+    public async Task<IActionResult> AtualizarOrganizador([FromQuery] int id,
+        [FromBody] Organizador organizadorAtualizado)
     {
         if (organizadorAtualizado == null || id <= 0)
         {
@@ -56,5 +57,4 @@ public class OrganizadorController : ControllerBase
             return StatusCode(500, $"Erro ao atualizar: {ex.Message}");
         }
     }
-    
 }

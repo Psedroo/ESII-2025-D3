@@ -4,8 +4,11 @@
 
 <h3></h3>
 
+<BackButton />
+
+
 @using System.ComponentModel.DataAnnotations
-@inject utilizadorService UtilizadorService
+@inject utilizadorService _usuarioService
 
 
 @if (!string.IsNullOrEmpty(message))
@@ -32,7 +35,7 @@
                                         <i class="fas fa-user fa-lg me-3 fa-fw"></i>
                                         <div data-mdb-input-init class="form-outline flex-fill mb-0">
                                             <InputText type="text" id="form3Example1c" class="form-control" @bind-Value="userModel.Username" required/>
-                                            <label class="form-label" for="form3Example1c">Nome</label>
+                                            <label class="form-label" for="form3Example1c">Your Name</label>
                                         </div>
                                     </div>
 
@@ -40,7 +43,7 @@
                                         <i class="fas fa-envelope fa-lg me-3 fa-fw"></i>
                                         <div data-mdb-input-init class="form-outline flex-fill mb-0">
                                             <InputText type="email" id="form3Example3c" class="form-control" @bind-Value="userModel.Email" required/>
-                                            <label class="form-label" for="form3Example3c">Email</label>
+                                            <label class="form-label" for="form3Example3c">Your Email</label>
                                         </div>
                                     </div>
 
@@ -48,7 +51,7 @@
                                         <i class="fas fa-lock fa-lg me-3 fa-fw"></i>
                                         <div data-mdb-input-init class="form-outline flex-fill mb-0">
                                             <InputText type="password" id="form3Example4c" class="form-control" @bind-Value="userModel.Password" required/>
-                                            <label class="form-label" for="form3Example4c">Palavra-passe</label>
+                                            <label class="form-label" for="form3Example4c">Password</label>
                                         </div>
                                     </div>
 
@@ -56,7 +59,7 @@
                                         <i class="fas fa-key fa-lg me-3 fa-fw"></i>
                                         <div data-mdb-input-init class="form-outline flex-fill mb-0">
                                             <InputText type="password" id="form3Example4cd" class="form-control" @bind-Value="verificacao.vefificar" required/>
-                                            <label class="form-label" for="form3Example4cd">Confirme a palavra-passe</label>
+                                            <label class="form-label" for="form3Example4cd">Repita a Password</label>
                                         </div>
                                     </div>
 
@@ -74,7 +77,7 @@
 
 
                                     <div class="d-flex justify-content-center mx-4 mb-3 mb-lg-4">
-                                        <button type="submit" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-lg">Registar</button>
+                                        <button type="submit" data-mdb-button-init data-mdb-ripple-init class="btn btn-primary btn-lg">Register</button>
                                     </div>
                                 </EditForm>
 
@@ -116,10 +119,10 @@
         
         try
         {
-            var user = await UtilizadorService.RegisterUserAsync(
+            var user = await _usuarioService.RegisterUserAsync(
                 userModel.Username, userModel.Email, userModel.Password, userModel.TipoUsuario);
 
-            message = user != null ? "Registo concluído!" : "Error registering user.";
+            message = user != null ? "Registration successful!" : "Error registering user.";
         }
         catch (Exception ex)
         {

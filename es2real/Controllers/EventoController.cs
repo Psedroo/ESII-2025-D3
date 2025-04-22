@@ -22,10 +22,25 @@ public class EventoController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Evento>> CriarEvento(Evento evento)
     {
+        
         _context.Eventos.Add(evento);
         await _context.SaveChangesAsync();
+        
+        var service = new BilheteService();
+
+        var bilheteNormal = service.CriarBilhete(TipoBilhete.Normal);
+        bilheteNormal.Id = evento.Id;
+        _context.Bilhetes.Add(bilheteNormal);
+
+        var bilheteVip = service.CriarBilhete(TipoBilhete.VIP);
+        bilheteVip.Id = evento.Id;
+        _context.Bilhetes.Add(bilheteVip);
+
+        await _context.SaveChangesAsync();
+
         return CreatedAtAction(nameof(GetEventos), new { id = evento.Id }, evento);
     }
+
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> RemoverEvento(int id)
