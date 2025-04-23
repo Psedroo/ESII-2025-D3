@@ -41,7 +41,6 @@ public class EventoController : ControllerBase
         return CreatedAtAction(nameof(GetEventos), new { id = evento.Id }, evento);
     }
 
-
     [HttpDelete("{id}")]
     public async Task<IActionResult> RemoverEvento(int id)
     {
@@ -53,4 +52,33 @@ public class EventoController : ControllerBase
 
         return NoContent();
     }
+    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> AtualizarEvento(int id, [FromBody] Evento eventoAtualizado)
+    {
+        if (id != eventoAtualizado.Id)
+        {
+            return BadRequest("ID do evento não corresponde.");
+        }
+
+        var eventoExistente = await _context.Eventos.FindAsync(id);
+        if (eventoExistente == null)
+        {
+            return NotFound("Evento não encontrado.");
+        }
+
+        eventoExistente.Nome = eventoAtualizado.Nome;
+        eventoExistente.Data = DateTime.SpecifyKind(eventoAtualizado.Data, DateTimeKind.Utc);
+        eventoExistente.Local = eventoAtualizado.Local;
+        eventoExistente.Categoria = eventoAtualizado.Categoria;
+        eventoExistente.Descricao = eventoAtualizado.Descricao;
+        eventoExistente.CapacidadeMax = eventoAtualizado.CapacidadeMax;
+        eventoExistente.PrecoIngresso = eventoAtualizado.PrecoIngresso;
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+
 }

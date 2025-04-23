@@ -1,5 +1,4 @@
 ﻿@page "/Eventos"
-
 @using ES2Real.Components.Layout
 
 <h3></h3>
@@ -21,26 +20,48 @@
     @if (mostrarFormulario)
     {
         <div class="card p-4 mt-4">
-            <h4>Criar Novo Evento</h4>
+            <h4>@(modoEdicao ? "Editar Evento" : "Criar Novo Evento")</h4>
 
             <div class="mb-3">
                 <label class="form-label">Nome do Evento</label>
-                <input type="text" class="form-control" @bind="novoEvento.Nome" />
+                <input type="text" class="form-control" @bind="eventoEditado.Nome" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Categoria</label>
+                <input type="text" class="form-control" @bind="eventoEditado.Categoria" />
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Data</label>
-                <input type="date" class="form-control" @bind="novoEvento.Data" min="2025-01-01" />
+                <input type="date" class="form-control" @bind="eventoEditado.Data" min="2025-01-01" />
             </div>
+
+          
 
             <div class="mb-3">
                 <label class="form-label">Local</label>
-                <input type="text" class="form-control" @bind="novoEvento.Local" />
+                <input type="text" class="form-control" @bind="eventoEditado.Local" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" @bind="eventoEditado.Descricao"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Capacidade Máxima</label>
+                <input type="number" class="form-control" @bind="eventoEditado.CapacidadeMax" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Preço do Ingresso</label>
+                <input type="number" class="form-control" @bind="eventoEditado.PrecoIngresso" />
             </div>
 
             <div class="d-flex justify-content-end">
                 <button class="btn btn-secondary me-2" @onclick="ToggleCriarEvento">Cancelar</button>
-                <button class="btn btn-primary" @onclick="CriarEvento">Criar Evento</button>
+                <button class="btn btn-primary" @onclick="SalvarEvento">Salvar Evento</button>
             </div>
         </div>
     }
@@ -61,8 +82,10 @@
                 <tr>
                     <td>@evento.Nome</td>
                     <td>@evento.Data.ToString("dd/MM/yyyy")</td>
+
                     <td>@evento.Local</td>
                     <td>
+                        <button class="btn btn-primary me-2" @onclick="() => EditarEvento(evento)">Editar</button>
                         <button class="btn btn-danger" @onclick="() => RemoverEvento(evento.Id)">Remover</button>
                     </td>
                 </tr>
@@ -74,8 +97,9 @@
 
 @code {
     private List<Evento> eventos = new();
-    private Evento novoEvento = new() { Data = new DateTime(2025, 1, 1) }; // 🔹 Data padrão em 2025
     private bool mostrarFormulario = false;
+    private bool modoEdicao = false;
+    private Evento eventoEditado = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -99,24 +123,54 @@
         mostrarFormulario = !mostrarFormulario;
         if (!mostrarFormulario)
         {
-            novoEvento = new() { Data = new DateTime(2025, 1, 1) }; // 🔹 Reseta a data para 2025
+            eventoEditado = new Evento(); // Limpa os dados para criação de um novo evento
+            modoEdicao = false;
         }
     }
 
-    private async Task CriarEvento()
+    private void EditarEvento(Evento evento)
+    {
+        eventoEditado = new Evento
+        {
+            Id = evento.Id,
+            Nome = evento.Nome,
+            Categoria = evento.Categoria,
+            Data = evento.Data,
+            Local = evento.Local,
+            Descricao = evento.Descricao,
+            CapacidadeMax = evento.CapacidadeMax,
+            PrecoIngresso = evento.PrecoIngresso
+        };
+        modoEdicao = true;
+        mostrarFormulario = true;
+    }
+
+    private async Task SalvarEvento()
     {
         try
         {
-            var response = await Http.PostAsJsonAsync("api/evento", novoEvento);
-            if (response.IsSuccessStatusCode)
+            if (modoEdicao)
             {
-                await CarregarEventos();
-                ToggleCriarEvento();
+                var response = await Http.PutAsJsonAsync($"api/evento/{eventoEditado.Id}", eventoEditado);
+                if (response.IsSuccessStatusCode)
+                {
+                    await CarregarEventos();
+                    ToggleCriarEvento();
+                }
+            }
+            else
+            {
+                var response = await Http.PostAsJsonAsync("api/evento", eventoEditado);
+                if (response.IsSuccessStatusCode)
+                {
+                    await CarregarEventos();
+                    ToggleCriarEvento();
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao criar evento: {ex.Message}");
+            Console.WriteLine($"Erro ao salvar evento: {ex.Message}");
         }
     }
 
@@ -140,7 +194,11 @@
     {
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
+        public string Categoria { get; set; } = string.Empty;
         public DateTime Data { get; set; }
         public string Local { get; set; } = string.Empty;
+        public string Descricao { get; set; } = string.Empty;
+        public int CapacidadeMax { get; set; }
+        public decimal PrecoIngresso { get; set; }
     }
 }
