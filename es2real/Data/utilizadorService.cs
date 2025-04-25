@@ -5,7 +5,7 @@ using System.Text.Json;
 using ES2Real.Interfaces;
 using ES2Real.Models;
 
-public class utilizadorService
+public class utilizadorService : IUtilizadorService
 {
     private readonly HttpClient _httpClient;
     private readonly IEnumerable<ITipoUsuarioHandler> _userHandlers;

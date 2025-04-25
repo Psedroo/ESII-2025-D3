@@ -1,10 +1,11 @@
 ﻿@page "/login"
 
 @using ES2Real.Components.Layout
+@using ES2Real.Interfaces;
 
 <h3></h3>
 
-@inject utilizadorService utilizadorService
+@inject IUtilizadorService utilizadorService
 @inject NavigationManager Navigation
 @inject UserSessionService AuthStateProvider
 
