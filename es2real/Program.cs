@@ -33,6 +33,7 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUtilizadorService, utilizadorService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:44343/") });
+builder.Services.AddScoped<utilizadorService>();
 
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddSingleton<UserSessionService>();
