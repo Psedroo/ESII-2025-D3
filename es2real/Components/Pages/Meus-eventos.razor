@@ -4,40 +4,49 @@
 @rendermode InteractiveServer
 @inject HttpClient Http
 
-<h3></h3>
+<h3>Meus Eventos</h3>
 
 <BackButton />
+
+<div class="mb-3 d-flex gap-2">
+    <input class="form-control" placeholder="Filtrar por Categoria" @bind="filtroCategoria" @bind:event="oninput" />
+    <input class="form-control" placeholder="Filtrar por Local" @bind="filtroLocal" @bind:event="oninput" />
+</div>
 
 <div class="mt-4">
     <table class="table">
         <thead>
-        <tr>
-            <th>Nome</th>
-            <th>Data</th>
-            <th>Local</th>
-            <th>Ações</th>
-        </tr>
+            <tr>
+                <th>Nome</th>
+                <th>Data</th>
+                <th>Local</th>
+                <th>Categoria</th>
+                <th>Ações</th>
+            </tr>
         </thead>
         <tbody>
-        @foreach (var evento in eventos)
-        {
-            <tr>
-                <td>@evento.Nome</td>
-                <td>@evento.Data.ToString("dd/MM/yyyy")</td>
-                <td>@evento.Local</td>
-                <td>
-                    <button class="btn btn-danger" @onclick="() => RemoverEvento(evento.Id)">Remover</button>
-                </td>
-            </tr>
-        }
+            @foreach (var evento in eventosFiltrados)
+            {
+                <tr>
+                    <td>@evento.Nome</td>
+                    <td>@evento.Data.ToString("dd/MM/yyyy")</td>
+                    <td>@evento.Local</td>
+                    <td>@evento.Categoria</td>
+                    <td>
+                        <button class="btn btn-danger" @onclick="() => RemoverEvento(evento.Id)">Remover</button>
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 </div>
 
 @code {
     private List<Evento> eventos = new();
-    private Evento novoEvento = new() { Data = new DateTime(2025, 1, 1) }; 
-    private bool mostrarFormulario = false;
+    private List<Evento> eventosFiltrados = new();
+
+    private string filtroCategoria = string.Empty;
+    private string filtroLocal = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -49,6 +58,7 @@
         try
         {
             eventos = await Http.GetFromJsonAsync<List<Evento>>("api/BilheteParticipante");
+            FiltrarEventos(); // Aplica filtro inicial
         }
         catch (Exception ex)
         {
@@ -56,8 +66,45 @@
         }
     }
 
-    private async Task RemoverEvento(int id)
+    private void FiltrarEventos()
     {
+        eventosFiltrados = eventos
+            .Where(e =>
+                (string.IsNullOrWhiteSpace(filtroCategoria) || e.Categoria.Contains(filtroCategoria, StringComparison.OrdinalIgnoreCase)) &&
+                (string.IsNullOrWhiteSpace(filtroLocal) || e.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase))
+            )
+            .ToList();
     }
 
+    private async Task RemoverEvento(int id)
+    {
+        // Aqui você pode implementar a lógica para remover via API
+        // await Http.DeleteAsync($"api/Eventos/{id}");
+        var eventoRemover = eventos.FirstOrDefault(e => e.Id == id);
+        if (eventoRemover != null)
+        {
+            eventos.Remove(eventoRemover);
+            FiltrarEventos(); // Atualiza a lista filtrada
+        }
+    }
+
+    private string FiltroCategoria
+    {
+        get => filtroCategoria;
+        set
+        {
+            filtroCategoria = value;
+            FiltrarEventos();
+        }
+    }
+
+    private string FiltroLocal
+    {
+        get => filtroLocal;
+        set
+        {
+            filtroLocal = value;
+            FiltrarEventos();
+        }
+    }
 }
