@@ -8,9 +8,10 @@
 
 <BackButton />
 
-<div class="mb-3 d-flex gap-2">
-    <input class="form-control" placeholder="Filtrar por Categoria" @bind="filtroCategoria" @bind:event="oninput" />
-    <input class="form-control" placeholder="Filtrar por Local" @bind="filtroLocal" @bind:event="oninput" />
+<div class="mb-3 d-flex gap-2 flex-wrap">
+    <input class="form-control" placeholder="Filtrar por Categoria" @bind="FiltroCategoria" @bind:event="oninput" />
+    <input class="form-control" placeholder="Filtrar por Local" @bind="FiltroLocal" @bind:event="oninput" />
+    <input class="form-control" type="date" @bind="FiltroData" />
 </div>
 
 <div class="mt-4">
@@ -47,6 +48,7 @@
 
     private string filtroCategoria = string.Empty;
     private string filtroLocal = string.Empty;
+    private DateTime? filtroData = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,7 +60,7 @@
         try
         {
             eventos = await Http.GetFromJsonAsync<List<Evento>>("api/BilheteParticipante");
-            FiltrarEventos(); // Aplica filtro inicial
+            FiltrarEventos();
         }
         catch (Exception ex)
         {
@@ -71,20 +73,19 @@
         eventosFiltrados = eventos
             .Where(e =>
                 (string.IsNullOrWhiteSpace(filtroCategoria) || e.Categoria.Contains(filtroCategoria, StringComparison.OrdinalIgnoreCase)) &&
-                (string.IsNullOrWhiteSpace(filtroLocal) || e.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase))
+                (string.IsNullOrWhiteSpace(filtroLocal) || e.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase)) &&
+                (!filtroData.HasValue || e.Data.Date == filtroData.Value.Date)
             )
             .ToList();
     }
 
     private async Task RemoverEvento(int id)
     {
-        // Aqui você pode implementar a lógica para remover via API
-        // await Http.DeleteAsync($"api/Eventos/{id}");
         var eventoRemover = eventos.FirstOrDefault(e => e.Id == id);
         if (eventoRemover != null)
         {
             eventos.Remove(eventoRemover);
-            FiltrarEventos(); // Atualiza a lista filtrada
+            FiltrarEventos();
         }
     }
 
@@ -104,6 +105,16 @@
         set
         {
             filtroLocal = value;
+            FiltrarEventos();
+        }
+    }
+
+    private DateTime? FiltroData
+    {
+        get => filtroData;
+        set
+        {
+            filtroData = value;
             FiltrarEventos();
         }
     }

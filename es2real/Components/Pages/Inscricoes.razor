@@ -15,6 +15,7 @@
     <input @bind="filtro" @bind:event="oninput" placeholder="Procurar por nome..." class="form-control me-2" />
     <input @bind="filtroCategoria" @bind:event="oninput" placeholder="Categoria..." class="form-control me-2" />
     <input @bind="filtroLocal" @bind:event="oninput" placeholder="Local..." class="form-control me-2" />
+    <input type="date" @bind="filtroData" class="form-control me-2" />
     <button><span class="lupa">&#128269;</span></button>
 </div>
 
@@ -136,13 +137,15 @@ else
     private string filtro = "";
     private string filtroCategoria = "";
     private string filtroLocal = "";
+    private DateTime? filtroData = null;
 
     private IEnumerable<Evento> eventosFiltrados =>
         eventos?
             .Where(e =>
                 (string.IsNullOrWhiteSpace(filtro) || e.Nome.Contains(filtro, StringComparison.OrdinalIgnoreCase)) &&
                 (string.IsNullOrWhiteSpace(filtroCategoria) || e.Categoria.Contains(filtroCategoria, StringComparison.OrdinalIgnoreCase)) &&
-                (string.IsNullOrWhiteSpace(filtroLocal) || e.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase))
+                (string.IsNullOrWhiteSpace(filtroLocal) || e.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase)) &&
+                (!filtroData.HasValue || e.Data.Date == filtroData.Value.Date)
             ) ?? new List<Evento>();
 
     protected override async Task OnInitializedAsync()
