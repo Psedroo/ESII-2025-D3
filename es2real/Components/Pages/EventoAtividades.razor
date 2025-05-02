@@ -1,0 +1,73 @@
+﻿@page "/EventoAtividades/{id:int}"
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
+
+<h3>Detalhes do Evento</h3>
+
+@if (evento is null)
+{
+    <p>Carregando...</p>
+}
+else
+{
+    <div class="evento-detalhes">
+        <h4>@evento.Nome</h4>
+        <p><strong>Data:</strong> @evento.Data.ToString("dd/MM/yyyy")</p>
+        <p><strong>Hora:</strong> @evento.Hora</p>
+        <p><strong>Local:</strong> @evento.Local</p>
+        <p><strong>Categoria:</strong> @evento.Categoria</p>
+        <p><strong>Preço:</strong> @evento.PrecoIngresso.ToString("C")</p>
+        <p><strong>Descrição:</strong> @evento.Descricao</p>
+    </div>
+
+    <h5>Atividades do Evento</h5>
+    @if (atividades is null || !atividades.Any())
+    {
+        <p>Nenhuma atividade associada a este evento.</p>
+    }
+    else
+    {
+        <ul>
+            @foreach (var atividade in atividades)
+            {
+                <li>
+                    <strong>@atividade.Nome</strong> - @atividade.Descricao<br />
+                    <em>@atividade.Data.ToString("dd/MM/yyyy") às @atividade.Hora</em>
+                </li>
+            }
+        </ul>
+    }
+
+    <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+}
+
+@code {
+    [Parameter]
+    public int id { get; set; }
+
+    private Evento? evento;
+    private List<Atividade> atividades = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        evento = await Db.Eventos
+            .Include(e => e.EventoAtividades)
+            .ThenInclude(ea => ea.Atividade)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (evento != null)
+        {
+            atividades = evento.EventoAtividades
+                .Select(ea => ea.Atividade)
+                .OrderBy(a => a.Data)
+                .ThenBy(a => a.Hora)
+                .ToList();
+        }
+    }
+
+    private void Voltar()
+    {
+        Navigation.NavigateTo("/Inscricoes/" + id); // ou redirecione para onde preferir
+    }
+}
