@@ -69,6 +69,7 @@ public class EventoController : ControllerBase
 
         eventoExistente.Nome = eventoAtualizado.Nome;
         eventoExistente.Data = DateTime.SpecifyKind(eventoAtualizado.Data, DateTimeKind.Utc);
+        eventoExistente.Hora = eventoAtualizado.Hora;
         eventoExistente.Local = eventoAtualizado.Local;
         eventoExistente.Categoria = eventoAtualizado.Categoria;
         eventoExistente.Descricao = eventoAtualizado.Descricao;

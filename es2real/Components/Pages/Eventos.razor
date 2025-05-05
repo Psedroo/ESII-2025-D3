@@ -1,8 +1,6 @@
 ﻿@page "/Eventos"
 @using ES2Real.Components.Layout
 
-<h3></h3>
-
 <BackButton />
 
 @rendermode InteractiveServer
@@ -34,10 +32,13 @@
 
             <div class="mb-3">
                 <label class="form-label">Data</label>
-                <input type="date" class="form-control" @bind="eventoEditado.Data" min="2025-01-01" />
+                <input type="date" class="form-control" value="@dataString" @onchange="OnDataChanged" />
             </div>
 
-          
+            <div class="mb-3">
+                <label class="form-label">Hora</label>
+                <input type="time" class="form-control" value="@horaString" @onchange="OnHoraChanged" />
+            </div>
 
             <div class="mb-3">
                 <label class="form-label">Local</label>
@@ -72,6 +73,7 @@
             <tr>
                 <th>Nome</th>
                 <th>Data</th>
+                <th>Hora</th>
                 <th>Local</th>
                 <th>Ações</th>
             </tr>
@@ -82,7 +84,7 @@
                 <tr>
                     <td>@evento.Nome</td>
                     <td>@evento.Data.ToString("dd/MM/yyyy")</td>
-
+                    <td>@evento.Hora.ToString(@"hh\:mm")</td>
                     <td>@evento.Local</td>
                     <td>
                         <button class="btn btn-primary me-2" @onclick="() => EditarEvento(evento)">Editar</button>
@@ -100,6 +102,10 @@
     private bool mostrarFormulario = false;
     private bool modoEdicao = false;
     private Evento eventoEditado = new();
+    
+    // Use string properties for date and time inputs
+    private string dataString = string.Empty;
+    private string horaString = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -110,11 +116,12 @@
     {
         try
         {
-            eventos = await Http.GetFromJsonAsync<List<Evento>>("api/evento");
+            eventos = await Http.GetFromJsonAsync<List<Evento>>("api/evento") ?? new List<Evento>();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
+            eventos = new List<Evento>();
         }
     }
 
@@ -123,8 +130,10 @@
         mostrarFormulario = !mostrarFormulario;
         if (!mostrarFormulario)
         {
-            eventoEditado = new Evento(); // Limpa os dados para criação de um novo evento
+            eventoEditado = new Evento();
             modoEdicao = false;
+            dataString = string.Empty;
+            horaString = string.Empty;
         }
     }
 
@@ -139,33 +148,57 @@
             Local = evento.Local,
             Descricao = evento.Descricao,
             CapacidadeMax = evento.CapacidadeMax,
-            PrecoIngresso = evento.PrecoIngresso
+            PrecoIngresso = evento.PrecoIngresso,
+            Hora = evento.Hora
         };
+
+        // Format the date and time as strings for the inputs
+        dataString = evento.Data.ToString("yyyy-MM-dd");
+        horaString = evento.Hora.ToString(@"hh\:mm");
+
         modoEdicao = true;
         mostrarFormulario = true;
+    }
+
+    // Handle date input changes
+    private void OnDataChanged(ChangeEventArgs e)
+    {
+        dataString = e.Value?.ToString() ?? string.Empty;
+        if (DateTime.TryParse(dataString, out var data))
+        {
+            eventoEditado.Data = data;
+        }
+    }
+
+    // Handle time input changes
+    private void OnHoraChanged(ChangeEventArgs e)
+    {
+        horaString = e.Value?.ToString() ?? string.Empty;
+        if (TimeSpan.TryParse(horaString, out var hora))
+        {
+            eventoEditado.Hora = hora;
+        }
     }
 
     private async Task SalvarEvento()
     {
         try
         {
+            HttpResponseMessage response;
+
             if (modoEdicao)
             {
-                var response = await Http.PutAsJsonAsync($"api/evento/{eventoEditado.Id}", eventoEditado);
-                if (response.IsSuccessStatusCode)
-                {
-                    await CarregarEventos();
-                    ToggleCriarEvento();
-                }
+                response = await Http.PutAsJsonAsync($"api/evento/{eventoEditado.Id}", eventoEditado);
             }
             else
             {
-                var response = await Http.PostAsJsonAsync("api/evento", eventoEditado);
-                if (response.IsSuccessStatusCode)
-                {
-                    await CarregarEventos();
-                    ToggleCriarEvento();
-                }
+                response = await Http.PostAsJsonAsync("api/evento", eventoEditado);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                await CarregarEventos();
+                ToggleCriarEvento();
             }
         }
         catch (Exception ex)
@@ -195,7 +228,8 @@
         public int Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public string Categoria { get; set; } = string.Empty;
-        public DateTime Data { get; set; }
+        public DateTime Data { get; set; } = DateTime.Today;
+        public TimeSpan Hora { get; set; }
         public string Local { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public int CapacidadeMax { get; set; }
