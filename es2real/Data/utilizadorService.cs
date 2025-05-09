@@ -1,11 +1,12 @@
-﻿using System.Net.Http.Json;
+﻿
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using ES2Real.Interfaces;
 using ES2Real.Models;
 
-public class utilizadorService : IUtilizadorService
+public class utilizadorService
 {
     private readonly HttpClient _httpClient;
     private readonly IEnumerable<ITipoUsuarioHandler> _userHandlers;
