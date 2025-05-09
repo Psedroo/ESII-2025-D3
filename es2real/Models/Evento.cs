@@ -14,7 +14,6 @@ public class Evento
     public string Nome { get; set; } = string.Empty;
     public string Descricao { get; set; } = string.Empty;
     public int CapacidadeMax { get; set; }
-    public decimal PrecoIngresso { get; set; }
     
     [ForeignKey("Organizador")]
     public int IdOrganizador { get; set; }

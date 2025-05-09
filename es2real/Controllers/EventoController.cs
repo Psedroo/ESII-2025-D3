@@ -74,7 +74,6 @@ public class EventoController : ControllerBase
         eventoExistente.Categoria = eventoAtualizado.Categoria;
         eventoExistente.Descricao = eventoAtualizado.Descricao;
         eventoExistente.CapacidadeMax = eventoAtualizado.CapacidadeMax;
-        eventoExistente.PrecoIngresso = eventoAtualizado.PrecoIngresso;
 
         await _context.SaveChangesAsync();
 

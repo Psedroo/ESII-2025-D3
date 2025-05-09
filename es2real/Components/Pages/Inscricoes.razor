@@ -39,7 +39,6 @@ else
                 <p><strong>Data:</strong> @evento.Data.ToString("dd/MM/yyyy")</p>
                 <p><strong>Hora:</strong> @evento.Hora</p>
                 <p><strong>Local:</strong> @evento.Local</p>
-                <p><strong>Preço:</strong> @evento.PrecoIngresso.ToString("C")</p>
                 <button class="btn btn-info" @onclick="() => ComprarBilhete(evento.Id)">Comprar Bilhete</button>
                 <button class="btn btn-primary" @onclick="() => IrParaDetalhes(evento.Id)">Ver Detalhes</button>
             </div>
