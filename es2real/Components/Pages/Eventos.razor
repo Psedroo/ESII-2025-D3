@@ -1,5 +1,7 @@
 ﻿@page "/Eventos"
 @using ES2Real.Components.Layout
+@inject UserSessionService userSessionService
+
 
 <BackButton />
 
@@ -54,12 +56,6 @@
                 <label class="form-label">Capacidade Máxima</label>
                 <input type="number" class="form-control" @bind="eventoEditado.CapacidadeMax" />
             </div>
-
-            <div class="mb-3">
-                <label class="form-label">Preço do Ingresso</label>
-                <input type="number" class="form-control" @bind="eventoEditado.PrecoIngresso" />
-            </div>
-
             <div class="d-flex justify-content-end">
                 <button class="btn btn-secondary me-2" @onclick="ToggleCriarEvento">Cancelar</button>
                 <button class="btn btn-primary" @onclick="SalvarEvento">Salvar Evento</button>
@@ -102,7 +98,7 @@
     private bool mostrarFormulario = false;
     private bool modoEdicao = false;
     private Evento eventoEditado = new();
-    
+
     // Use string properties for date and time inputs
     private string dataString = string.Empty;
     private string horaString = string.Empty;
@@ -148,7 +144,6 @@
             Local = evento.Local,
             Descricao = evento.Descricao,
             CapacidadeMax = evento.CapacidadeMax,
-            PrecoIngresso = evento.PrecoIngresso,
             Hora = evento.Hora
         };
 
@@ -180,10 +175,17 @@
         }
     }
 
-    private async Task SalvarEvento()
+    public async Task SalvarEvento()
     {
         try
         {
+            var usuarioLogado = userSessionService.GetUsuario(); // Obtém o usuário logado
+
+            if (usuarioLogado != null)
+            {
+                eventoEditado.IdOrganizador = usuarioLogado.Id; // Associa o organizador ao evento
+            }
+
             HttpResponseMessage response;
 
             if (modoEdicao)
@@ -206,6 +208,7 @@
             Console.WriteLine($"Erro ao salvar evento: {ex.Message}");
         }
     }
+
 
     private async Task RemoverEvento(int id)
     {
@@ -233,6 +236,9 @@
         public string Local { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public int CapacidadeMax { get; set; }
-        public decimal PrecoIngresso { get; set; }
+        public int IdOrganizador { get; set; }
     }
+
 }
+}
+
