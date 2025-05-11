@@ -22,20 +22,18 @@ public class EventoController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Evento>> CriarEvento(Evento evento)
     {
-        evento.Data = evento.Data.ToUniversalTime();
         
-
         _context.Eventos.Add(evento);
         await _context.SaveChangesAsync();
         
         var service = new BilheteService();
 
         var bilheteNormal = service.CriarBilhete(TipoBilhete.Normal);
-        bilheteNormal.idEvento = evento.Id;
+        bilheteNormal.Id = evento.Id;
         _context.Bilhetes.Add(bilheteNormal);
 
         var bilheteVip = service.CriarBilhete(TipoBilhete.VIP);
-        bilheteVip.idEvento = evento.Id;
+        bilheteVip.Id = evento.Id;
         _context.Bilhetes.Add(bilheteVip);
 
         await _context.SaveChangesAsync();
