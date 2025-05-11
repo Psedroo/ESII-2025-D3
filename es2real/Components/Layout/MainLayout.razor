@@ -1,19 +1,21 @@
 ﻿@using ES2Real.Data
-@using Microsoft.EntityFrameworkCore.Metadata.Internal
-@using ES2Real.Interfaces
+@using Microsoft.AspNetCore.Components.Authorization
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
-@inject UserSessionService AuthStateProvider
+@inject AuthenticationStateProvider AuthStateProvider
 
 
 <div class="page">
     <div class="sidebar">
-        <NavMenu/>
+        <NavMenu />
     </div>
 
     <main>
         <div class="top-row px-4">
-            <button class="btn btn-lg px-5" @onclick="() => AuthStateProvider.Logout()">Terminar Sessão</button>
+            @if (estaAutenticado)
+            {
+                <button class="btn btn-lg px-5" @onclick="TerminarSessao">Terminar Sessão</button>
+            }
         </div>
 
         <article class="content px-4">
@@ -22,8 +24,37 @@
     </main>
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+
+@code {
+    private bool estaAutenticado = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        estaAutenticado = authState.User.Identity?.IsAuthenticated ?? false;
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        var authState = await task;
+        estaAutenticado = authState.User.Identity?.IsAuthenticated ?? false;
+
+        if (!estaAutenticado)
+        {
+            Navigation.NavigateTo("/login", true);
+        }
+
+        StateHasChanged(); // força a UI a atualizar
+    }
+
+
+    private void TerminarSessao()
+    {
+        if (AuthStateProvider is CustomAuthStateProvider custom)
+        {
+            custom.Logout();
+        }
+    }
+}

@@ -37,6 +37,9 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
     
     public void Logout()
     {
+        _userSessionService.Logout(); // limpa a sessão
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync()); // atualiza o estado para desautenticado
     }
+
 
 }

@@ -38,6 +38,7 @@ builder.Services.AddScoped<utilizadorService>();
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddSingleton<UserSessionService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
