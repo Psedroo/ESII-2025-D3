@@ -1,84 +1,83 @@
-﻿namespace ES2Real.Controllers;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ES2Real.Data;
+using ES2Real.Models;
+using ES2Real.Components.Services;
 
-[ApiController]
-[Route("api/[controller]")]
-public class EventoController : ControllerBase
+namespace ES2Real.Controllers
 {
-    private readonly ApplicationDbContext _context;
-
-    public EventoController(ApplicationDbContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class EventoController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
+        private readonly BilheteService _bilheteService;
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Evento>>> GetEventos()
-    {
-        return await _context.Eventos.ToListAsync();
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<Evento>> CriarEvento(Evento evento)
-    {
-        
-        _context.Eventos.Add(evento);
-        await _context.SaveChangesAsync();
-        
-        var service = new BilheteService();
-
-        var bilheteNormal = service.CriarBilhete(TipoBilhete.Normal);
-        bilheteNormal.Id = evento.Id;
-        _context.Bilhetes.Add(bilheteNormal);
-
-        var bilheteVip = service.CriarBilhete(TipoBilhete.VIP);
-        bilheteVip.Id = evento.Id;
-        _context.Bilhetes.Add(bilheteVip);
-
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetEventos), new { id = evento.Id }, evento);
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> RemoverEvento(int id)
-    {
-        var evento = await _context.Eventos.FindAsync(id);
-        if (evento == null) return NotFound();
-
-        _context.Eventos.Remove(evento);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-    
-    [HttpPut("{id}")]
-    public async Task<IActionResult> AtualizarEvento(int id, [FromBody] Evento eventoAtualizado)
-    {
-        if (id != eventoAtualizado.Id)
+        public EventoController(ApplicationDbContext context, BilheteService bilheteService)
         {
-            return BadRequest("ID do evento não corresponde.");
+            _context = context;
+            _bilheteService = bilheteService;
         }
 
-        var eventoExistente = await _context.Eventos.FindAsync(id);
-        if (eventoExistente == null)
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Evento>>> GetEventos()
         {
-            return NotFound("Evento não encontrado.");
+            return await _context.Eventos.ToListAsync();
         }
 
-        eventoExistente.Nome = eventoAtualizado.Nome;
-        eventoExistente.Data = DateTime.SpecifyKind(eventoAtualizado.Data, DateTimeKind.Utc);
-        eventoExistente.Hora = eventoAtualizado.Hora;
-        eventoExistente.Local = eventoAtualizado.Local;
-        eventoExistente.Categoria = eventoAtualizado.Categoria;
-        eventoExistente.Descricao = eventoAtualizado.Descricao;
-        eventoExistente.CapacidadeMax = eventoAtualizado.CapacidadeMax;
+        [HttpPost]
+        public async Task<ActionResult<Evento>> CriarEvento(Evento evento)
+        {
+            _context.Eventos.Add(evento);
+            await _context.SaveChangesAsync();
 
-        await _context.SaveChangesAsync();
+            // Criar bilhetes associados
+            var bilheteNormal = _bilheteService.CriarBilhete(TipoBilhete.Normal);
+            var bilheteVip = _bilheteService.CriarBilhete(TipoBilhete.VIP);
 
-        return NoContent();
+            // Associa manualmente o evento (caso uses navegação)
+            bilheteNormal.idEvento = evento.Id;
+            bilheteVip.idEvento = evento.Id; 
+
+            _context.Bilhetes.AddRange(bilheteNormal, bilheteVip);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetEventos), new { id = evento.Id }, evento);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> RemoverEvento(int id)
+        {
+            var evento = await _context.Eventos.FindAsync(id);
+            if (evento == null) return NotFound();
+
+            _context.Eventos.Remove(evento);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> AtualizarEvento(int id, [FromBody] Evento eventoAtualizado)
+        {
+            if (id != eventoAtualizado.Id)
+                return BadRequest("ID do evento não corresponde.");
+
+            var eventoExistente = await _context.Eventos.FindAsync(id);
+            if (eventoExistente == null)
+                return NotFound("Evento não encontrado.");
+
+            eventoExistente.Nome = eventoAtualizado.Nome;
+            eventoExistente.Data = DateTime.SpecifyKind(eventoAtualizado.Data, DateTimeKind.Utc);
+            eventoExistente.Hora = eventoAtualizado.Hora;
+            eventoExistente.Local = eventoAtualizado.Local;
+            eventoExistente.Categoria = eventoAtualizado.Categoria;
+            eventoExistente.Descricao = eventoAtualizado.Descricao;
+            eventoExistente.CapacidadeMax = eventoAtualizado.CapacidadeMax;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
-
-
 }

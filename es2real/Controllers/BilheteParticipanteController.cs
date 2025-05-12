@@ -1,57 +1,60 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ES2Real.Models;
 
-[ApiController]
-[Route("api/[controller]")]
-public class BilheteParticipanteController : ControllerBase
+namespace ES2Real.Controllers
 {
-    private readonly ApplicationDbContext _context;
-
-    public BilheteParticipanteController(ApplicationDbContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class BilheteParticipanteController : ControllerBase
     {
-        _context = context;
+        private readonly ApplicationDbContext _context;
+
+        public BilheteParticipanteController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<BilheteParticipanteEventoDto>>> GetMyEventos()
+        {
+            var resultado = await _context.BilheteParticipante
+                .Include(bp => bp.Bilhete)
+                .ThenInclude(b => b.Evento)
+                .Select(bp => new BilheteParticipanteEventoDto
+                {
+                    IdBilhete = bp.IdBilhete,
+                    Evento = bp.Bilhete.Evento
+                })
+                .ToListAsync();
+
+            return Ok(resultado);
+        }
+
+        [HttpDelete("cancelar/{idBilhete}")]
+        public IActionResult CancelarInscricao(int idBilhete)
+        {
+            var registo = _context.BilheteParticipante
+                .FirstOrDefault(bp => bp.IdBilhete == idBilhete);
+
+            if (registo == null)
+                return NotFound("Inscrição não encontrada.");
+
+            _context.BilheteParticipante.Remove(registo);
+
+            var bilhete = _context.Bilhetes.FirstOrDefault(b => b.Id == idBilhete);
+            if (bilhete != null)
+                bilhete.Quantidade++;
+
+            _context.SaveChanges();
+
+            return NoContent();
+        }
     }
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Evento>>> GetMyEventos()
+    public class BilheteParticipanteEventoDto
     {
-        List<Bilhete_Participante> bilhetesParticipantes = await _context.BilheteParticipante.ToListAsync();
-        
-        List<Bilhete> bilhetes = await _context.Bilhetes.ToListAsync();
-
-        HashSet<int> MyEventos = new HashSet<int>();
-
-        foreach (var bp in bilhetesParticipantes)
-        {
-            Bilhete? bilheteEncontrado = null;
-
-            foreach (var b in bilhetes)
-            {
-                if (b.Id == bp.IdBilhete)
-                {
-                    bilheteEncontrado = b;
-                }
-            }
-
-            if (bilheteEncontrado != null)
-            {
-                MyEventos.Add(bilheteEncontrado.idEvento);
-            }
-        }
-
-        List<Evento> eventosDoParticipante = new List<Evento>();
-
-        List<Evento> todosEventos = await _context.Eventos.ToListAsync();
-
-        foreach (var evento in todosEventos)
-        {
-            if (MyEventos.Contains(evento.Id))
-            {
-                eventosDoParticipante.Add(evento);
-            }
-        }
-
-        
-        return Ok(eventosDoParticipante);
+        public int IdBilhete { get; set; }
+        public Evento Evento { get; set; } = null!;
     }
 }

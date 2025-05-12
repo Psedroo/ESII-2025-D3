@@ -1,9 +1,9 @@
 ﻿@page "/Meus-eventos"
 
-
+@using ES2Real.Components.Layout
+@using System.Net.Http.Json
 @rendermode InteractiveServer
 @inject HttpClient Http
-@using ES2Real.Components.Layout
 
 <h3>Meus Eventos</h3>
 
@@ -27,15 +27,15 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var evento in eventosFiltrados)
+            @foreach (var e in eventosFiltrados)
             {
                 <tr>
-                    <td>@evento.Nome</td>
-                    <td>@evento.Data.ToString("dd/MM/yyyy")</td>
-                    <td>@evento.Local</td>
-                    <td>@evento.Categoria</td>
+                    <td>@e.Evento.Nome</td>
+                    <td>@e.Evento.Data.ToString("dd/MM/yyyy")</td>
+                    <td>@e.Evento.Local</td>
+                    <td>@e.Evento.Categoria</td>
                     <td>
-                        <button class="btn btn-danger" @onclick="() => RemoverEvento(evento.Id)">Remover</button>
+                        <button class="btn btn-danger" @onclick="() => CancelarInscricao(e.IdBilhete)">Cancelar Inscrição</button>
                     </td>
                 </tr>
             }
@@ -44,8 +44,8 @@
 </div>
 
 @code {
-    private List<Evento> eventos = new();
-    private List<Evento> eventosFiltrados = new();
+    private List<BilheteParticipanteEventoDto> eventos = new();
+    private List<BilheteParticipanteEventoDto> eventosFiltrados = new();
 
     private string filtroCategoria = string.Empty;
     private string filtroLocal = string.Empty;
@@ -60,7 +60,7 @@
     {
         try
         {
-            eventos = await Http.GetFromJsonAsync<List<Evento>>("api/BilheteParticipante");
+            eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>("api/BilheteParticipante");
             FiltrarEventos();
         }
         catch (Exception ex)
@@ -73,20 +73,30 @@
     {
         eventosFiltrados = eventos
             .Where(e =>
-                (string.IsNullOrWhiteSpace(filtroCategoria) || e.Categoria.Contains(filtroCategoria, StringComparison.OrdinalIgnoreCase)) &&
-                (string.IsNullOrWhiteSpace(filtroLocal) || e.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase)) &&
-                (!filtroData.HasValue || e.Data.Date == filtroData.Value.Date)
+                (string.IsNullOrWhiteSpace(filtroCategoria) || e.Evento.Categoria.Contains(filtroCategoria, StringComparison.OrdinalIgnoreCase)) &&
+                (string.IsNullOrWhiteSpace(filtroLocal) || e.Evento.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase)) &&
+                (!filtroData.HasValue || e.Evento.Data.Date == filtroData.Value.Date)
             )
             .ToList();
     }
 
-    private async Task RemoverEvento(int id)
+    private async Task CancelarInscricao(int idBilhete)
     {
-        var eventoRemover = eventos.FirstOrDefault(e => e.Id == id);
-        if (eventoRemover != null)
+        try
         {
-            eventos.Remove(eventoRemover);
-            FiltrarEventos();
+            var response = await Http.DeleteAsync($"api/BilheteParticipante/cancelar/{idBilhete}");
+            if (response.IsSuccessStatusCode)
+            {
+                await CarregarEventos();
+            }
+            else
+            {
+                Console.WriteLine($"Erro ao cancelar inscrição: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro: {ex.Message}");
         }
     }
 
@@ -118,5 +128,11 @@
             filtroData = value;
             FiltrarEventos();
         }
+    }
+
+    public class BilheteParticipanteEventoDto
+    {
+        public int IdBilhete { get; set; }
+        public Evento Evento { get; set; } = new();
     }
 }
