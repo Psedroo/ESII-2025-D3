@@ -1,3 +1,4 @@
+using ES2Real.Components.Services;
 using ES2Real.Components;
 using Microsoft.EntityFrameworkCore;
 using Blazored.LocalStorage;
@@ -32,6 +33,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<utilizadorService>();
+builder.Services.AddScoped<BilheteService>();
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:44343/") });
 builder.Services.AddScoped<utilizadorService>();
 

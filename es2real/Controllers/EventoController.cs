@@ -28,6 +28,7 @@ namespace ES2Real.Controllers
         [HttpPost]
         public async Task<ActionResult<Evento>> CriarEvento(Evento evento)
         {
+            evento.Data = DateTime.SpecifyKind(evento.Data, DateTimeKind.Utc);
             _context.Eventos.Add(evento);
             await _context.SaveChangesAsync();
 

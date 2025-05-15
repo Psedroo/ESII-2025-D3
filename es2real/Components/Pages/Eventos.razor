@@ -186,6 +186,7 @@
                 eventoEditado.IdOrganizador = usuarioLogado.Id; // Associa o organizador ao evento
             }
 
+            eventoEditado.Data = DateTime.SpecifyKind(eventoEditado.Data, DateTimeKind.Utc);
             HttpResponseMessage response;
 
             if (modoEdicao)
@@ -240,5 +241,4 @@
     }
 
 }
-
-
+}
