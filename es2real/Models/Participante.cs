@@ -16,4 +16,6 @@ public class Participante
     public UtilizadorAuth? Utilizador { get; set; }
     
     public List<Bilhete_Participante> BilheteParticipante { get; set; } = new();
+    public List<AtividadeParticipante> AtividadeParticipantes { get; set; } = new();
+
 }

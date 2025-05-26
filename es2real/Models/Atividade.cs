@@ -11,5 +11,6 @@ public class Atividade
     public TimeSpan Hora { get; set; }
     
     public List<Evento_Atividade> EventoAtividades { get; set; } = new();
+    public List<AtividadeParticipante> AtividadeParticipantes { get; set; } = new();
 
 }

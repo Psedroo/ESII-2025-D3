@@ -21,6 +21,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<RelatorioEspecifico> RelatoriosEspecificos { get; set; }
     public DbSet<RelatorioGeral> RelatoriosGerais { get; set; }
     public DbSet<UtilizadorAuth> UtilizadorAuth { get; set; }
+    public DbSet<AtividadeParticipante> AtividadeParticipantes { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,5 +112,19 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Bilhete>()
             .Property(b => b.Tipo)
             .HasConversion<string>();
+        modelBuilder.Entity<AtividadeParticipante>()
+            .HasKey(ap => new { ap.IdAtividade, ap.IdParticipante });
+
+        modelBuilder.Entity<AtividadeParticipante>()
+            .HasOne(ap => ap.Atividade)
+            .WithMany(a => a.AtividadeParticipantes)
+            .HasForeignKey(ap => ap.IdAtividade)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AtividadeParticipante>()
+            .HasOne(ap => ap.Participante)
+            .WithMany(p => p.AtividadeParticipantes)
+            .HasForeignKey(ap => ap.IdParticipante)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -1,0 +1,107 @@
+﻿@*
+@page "/relatorios"
+
+@inject ApplicationDbContext _context
+@inject UserSessionService SessionService
+@inject NavigationManager Navigation
+
+
+<h3>Criar Relatório Específico</h3>
+
+@if (eventosSemRelatorio is null)
+{
+    <p>A carregar eventos...</p>
+}
+else if (!eventosSemRelatorio.Any())
+{
+    <p>Todos os eventos já têm relatórios.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nome do Evento</th>
+                <th>Data</th>
+                <th>Local</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var evento in eventosSemRelatorio)
+            {
+                <tr>
+                    <td>@evento.Nome</td>
+                    <td>@evento.Data.ToShortDateString()</td>
+                    <td>@evento.Local</td>
+                    <td>
+                        <button class="btn btn-primary" @onclick="() => CriarRelatorio(evento.Id)">Criar Relatório</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Evento> eventosSemRelatorio;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Buscar eventos sem relatório específico
+        eventosSemRelatorio = await _context.Eventos
+            .Where(e => !e.EventoRelatoriosEspecificos.Any())
+            .ToListAsync();
+    }
+
+    private async Task CriarRelatorio(int eventoId)
+    {
+        var evento = await _context.Eventos
+            .Include(e => e.EventoRelatoriosEspecificos)
+            .Include(e => e.Organizador)
+            .FirstOrDefaultAsync(e => e.Id == eventoId);
+
+        if (evento == null) return;
+
+        // Obter todos os bilhetes e participantes associados
+        var bilhetes = await _context.Bilhetes
+            .Where(b => b.idEvento == eventoId)
+            .Include(b => b.BilheteParticipante)
+            .ToListAsync();
+
+        int numParticipantes = bilhetes.Sum(b => b.BilheteParticipante.Count);
+        decimal receitaTotal = bilhetes.Sum(b => b.Preco * b.BilheteParticipante.Count);
+
+        // Criar entidades
+        var relatorio = new Relatorio
+        {
+            Data = DateTime.Now,
+            Informacoes = $"Relatório gerado automaticamente para o evento '{evento.Nome}'."
+        };
+
+        var relatorioEspecifico = new RelatorioEspecifico
+        {
+            NumParticipantesAtiv = numParticipantes,
+            Receita = receitaTotal,
+            Feedback = "",
+            Relatorio = relatorio
+        };
+
+        relatorioEspecifico.EventoRelatoriosEspecificos.Add(new Evento_RelatorioEspecifico
+        {
+            IdEvento = eventoId,
+            RelatorioEspecifico = relatorioEspecifico
+        });
+
+        _context.Relatorios.Add(relatorio);
+        _context.RelatoriosEspecificos.Add(relatorioEspecifico);
+
+        await _context.SaveChangesAsync();
+
+        // Atualizar a lista após a criação
+        eventosSemRelatorio = await _context.Eventos
+            .Where(e => !e.EventoRelatoriosEspecificos.Any())
+            .ToListAsync();
+    }
+}
+*@
