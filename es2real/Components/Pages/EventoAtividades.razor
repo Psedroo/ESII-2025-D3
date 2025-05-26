@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @using ES2Real.Components.Layout
 @inject HttpClient Http
+@inject UserSessionService _userSessionService
 @rendermode InteractiveServer
 
 <BackButton />
@@ -43,42 +44,47 @@ else
                         <em>@atividade.Data.ToString("dd/MM/yyyy") às @atividade.Hora</em>
                     </div>
                     <div>
-                        <button class="btn btn-primary btn-sm me-2" @onclick="() => EditarAtividade(atividade)">Editar</button>
-                        <button class="btn btn-danger btn-sm" @onclick="() => RemoverAtividade(atividade.Id)">Remover</button>
+                        @if (cargo == "Organizador")
+                        {
+                            <button class="btn btn-primary btn-sm me-2" @onclick="() => EditarAtividade(atividade)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => RemoverAtividade(atividade.Id)">Remover</button>
+                        }
                     </div>
                 </li>
             }
         </ul>
     }
+    @if (cargo == "Organizador")
+    {
+        <h5>@(editandoAtividade ? "Editar Atividade" : "Adicionar Nova Atividade")</h5>
+        <div class="card p-3 mb-4">
+            <div class="mb-3">
+                <label class="form-label">Nome</label>
+                <input type="text" class="form-control" @bind="novaAtividade.Nome"/>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descrição</label>
+                <textarea class="form-control" @bind="novaAtividade.Descricao"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Data</label>
+                <input type="date" class="form-control" value="@dataString" @onchange="OnDataChanged"/>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Hora</label>
+                <input type="time" class="form-control" value="@horaString" @onchange="OnHoraChanged"/>
+            </div>
+            <button type="button" class="btn btn-success" @onclick="SalvarAtividade" @onclick:preventDefault>
+                @(editandoAtividade ? "Atualizar Atividade" : "Salvar Atividade")
+            </button>
+            @if (editandoAtividade)
+            {
+                <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarEdicao">Cancelar</button>
+            }
+        </div>
 
-    <h5>@(editandoAtividade ? "Editar Atividade" : "Adicionar Nova Atividade")</h5>
-    <div class="card p-3 mb-4">
-        <div class="mb-3">
-            <label class="form-label">Nome</label>
-            <input type="text" class="form-control" @bind="novaAtividade.Nome" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Descrição</label>
-            <textarea class="form-control" @bind="novaAtividade.Descricao"></textarea>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Data</label>
-            <input type="date" class="form-control" value="@dataString" @onchange="OnDataChanged" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Hora</label>
-            <input type="time" class="form-control" value="@horaString" @onchange="OnHoraChanged" />
-        </div>
-        <button type="button" class="btn btn-success" @onclick="SalvarAtividade" @onclick:preventDefault>
-            @(editandoAtividade ? "Atualizar Atividade" : "Salvar Atividade")
-        </button>
-        @if (editandoAtividade)
-        {
-            <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarEdicao">Cancelar</button>
-        }
-    </div>
-
-    <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+        <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+    }
 }
 
 @code {
@@ -92,10 +98,13 @@ else
     private string horaString = string.Empty;
     private bool editandoAtividade = false;
     private int? atividadeIdEditando = null;
+    private string cargo;
 
     protected override async Task OnInitializedAsync()
     {
         await CarregarEvento();
+        
+        cargo = _userSessionService.GetUsuario().TipoUsuario;
     }
 
     private async Task CarregarEvento()
