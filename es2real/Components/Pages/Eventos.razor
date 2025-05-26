@@ -1,6 +1,8 @@
 ﻿@page "/Eventos"
 @using ES2Real.Components.Layout
 @inject UserSessionService userSessionService
+@inject NavigationManager NavigationManager
+
 
 
 <BackButton />
@@ -85,6 +87,7 @@
                     <td>
                         <button class="btn btn-primary me-2" @onclick="() => EditarEvento(evento)">Editar</button>
                         <button class="btn btn-danger" @onclick="() => RemoverEvento(evento.Id)">Remover</button>
+                        <button class="btn btn-secondary" @onclick="() => GerirAtividades(evento.Id)">Atividades</button>
                     </td>
                 </tr>
             }
@@ -240,5 +243,11 @@
         public int IdOrganizador { get; set; }
     }
 
+    private void GerirAtividades(int eventoId)
+    {
+        NavigationManager.NavigateTo($"/EventoAtividades/{eventoId}");
+    }
+
+    
 }
 }

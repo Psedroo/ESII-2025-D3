@@ -1,12 +1,17 @@
 ﻿@page "/EventoAtividades/{id:int}"
+@using System.Diagnostics.Eventing.Reader
+@using System.Net
 @using Microsoft.EntityFrameworkCore
 @inject ApplicationDbContext Db
 @inject NavigationManager Navigation
 @using ES2Real.Components.Layout
+@inject HttpClient Http
+@rendermode InteractiveServer   
+
+
 
 <BackButton />
 
-<h3>Meus Eventos</h3>
 <h3>Detalhes do Evento</h3>
 
 @if (evento is null)
@@ -31,16 +36,43 @@ else
     }
     else
     {
-        <ul>
+        <ul class="list-group mb-4">
             @foreach (var atividade in atividades)
             {
-                <li>
-                    <strong>@atividade.Nome</strong> - @atividade.Descricao<br />
-                    <em>@atividade.Data.ToString("dd/MM/yyyy") às @atividade.Hora</em>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>@atividade.Nome</strong> - @atividade.Descricao<br />
+                        <em>@atividade.Data.ToString("dd/MM/yyyy") às @atividade.Hora</em>
+                    </div>
+                    <button class="btn btn-danger btn-sm" @onclick="() => RemoverAtividade(atividade.Id)">Remover</button>
                 </li>
             }
         </ul>
     }
+
+    <h5>Adicionar Nova Atividade</h5>
+    <div class="card p-3 mb-4">
+        <div class="mb-3">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-control" @bind="novaAtividade.Nome" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Descrição</label>
+            <textarea class="form-control" @bind="novaAtividade.Descricao"></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-control" value="@dataString" @onchange="OnDataChanged" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Hora</label>
+            <input type="time" class="form-control" value="@horaString" @onchange="OnHoraChanged" />
+        </div>
+        <button type="button" class="btn btn-success" @onclick="SalvarAtividade" @onclick:preventDefault>
+            Salvar Atividade
+        </button>
+
+    </div>
 
     <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
 }
@@ -52,9 +84,25 @@ else
     private Evento? evento;
     private List<Atividade> atividades = new();
 
+    private Atividade novaAtividade = new();
+    private string dataString = string.Empty;
+    private string horaString = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
+        await CarregarEvento();
+    }
+
+    private async Task CarregarEvento()
+    {
+        // Desanexa o objeto atual (caso já esteja em cache no tracking do contexto)
+        if (evento != null)
+        {
+            Db.Entry(evento).State = EntityState.Detached;
+        }
+
         evento = await Db.Eventos
+            .AsNoTracking() // <- importante para garantir que vem da base de dados
             .Include(e => e.EventoAtividades)
             .ThenInclude(ea => ea.Atividade)
             .FirstOrDefaultAsync(e => e.Id == id);
@@ -67,10 +115,133 @@ else
                 .ThenBy(a => a.Hora)
                 .ToList();
         }
+
+        StateHasChanged(); // <- força renderização
+    }
+
+
+
+    private async Task SalvarAtividade()
+{
+    Console.WriteLine("Funcao chamada");
+    try
+    {
+        Console.WriteLine("⏳ Iniciando SalvarAtividade");
+
+        // Validar e aplicar data
+        if (DateTime.TryParse(dataString, out var data))
+        {
+            novaAtividade.Data = data;
+            Console.WriteLine($"📅 Data válida: {data}");
+        }
+        else
+        {
+            Console.WriteLine("❌ Data inválida");
+            return; // evita continuar com dados inválidos
+        }
+
+        // Validar e aplicar hora
+        if (TimeSpan.TryParse(horaString, out var hora))
+        {
+            novaAtividade.Hora = hora;
+            Console.WriteLine($"⏰ Hora válida: {hora}");
+        }
+        else
+        {
+            Console.WriteLine("❌ Hora inválida");
+            return;
+        }
+
+        // Associar apenas o ID do evento
+        novaAtividade.EventoAtividades = new List<Evento_Atividade>
+        {
+            new Evento_Atividade
+            {
+                IdEvento = id,
+                Evento = null,      // evita erro de model binding
+                Atividade = null    // evita erro de model binding
+            }
+        };
+
+        // Log do JSON
+        Console.WriteLine("📦 JSON a enviar:");
+        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(novaAtividade));
+
+        // Enviar para API
+        var response = await Http.PostAsJsonAsync("api/atividade", novaAtividade);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("✅ Atividade criada com sucesso.");
+            await CarregarEvento(); // atualizar a lista
+            StateHasChanged();      // forçar renderização
+
+            // Limpar formulário
+            novaAtividade = new();
+            dataString = string.Empty;
+            horaString = string.Empty;
+        }
+        else
+        {
+            var erro = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"❌ Erro HTTP ({(int)response.StatusCode}): {erro}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"🔥 Erro inesperado: {ex.Message}");
+    }
+}
+
+
+
+
+    private async Task RemoverAtividade(int atividadeId)
+    {
+        // Remover primeiro da tabela de junção
+        var ligacoes = await Db.Set<Evento_Atividade>()
+            .Where(ea => ea.IdEvento == id && ea.IdAtividade == atividadeId)
+            .ToListAsync();
+
+        Db.Set<Evento_Atividade>().RemoveRange(ligacoes);
+
+        // Se a atividade não estiver ligada a outro evento, pode apagar
+        var outrasLigacoes = await Db.Set<Evento_Atividade>()
+            .CountAsync(ea => ea.IdAtividade == atividadeId && ea.IdEvento != id);
+
+        if (outrasLigacoes == 0)
+        {
+            var atividade = await Db.Atividades.FindAsync(atividadeId);
+            if (atividade != null)
+                Db.Atividades.Remove(atividade);
+        }
+
+        await Db.SaveChangesAsync();
+        await CarregarEvento();
     }
 
     private void Voltar()
     {
-        Navigation.NavigateTo("/Inscricoes/" + id); // ou redirecione para onde preferir
+        Navigation.NavigateTo("/Eventos");
     }
+    
+    private void OnDataChanged(ChangeEventArgs e)
+    {
+        dataString = e.Value?.ToString() ?? string.Empty;
+        if (DateTime.TryParse(dataString, out var data))
+        {
+            novaAtividade.Data = data;
+        }
+    }
+
+    private void OnHoraChanged(ChangeEventArgs e)
+    {
+        horaString = e.Value?.ToString() ?? string.Empty;
+        if (TimeSpan.TryParse(horaString, out var hora))
+        {
+            novaAtividade.Hora = hora;
+        }
+    }
+
+    
 }

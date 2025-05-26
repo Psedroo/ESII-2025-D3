@@ -4,9 +4,9 @@ public class Evento_Atividade
 {
     [ForeignKey("Evento")]
     public int IdEvento { get; set; }
-    public Evento Evento { get; set; } = null!;
+    public Evento? Evento { get; set; }
 
     [ForeignKey("Atividade")]
     public int IdAtividade { get; set; }
-    public Atividade Atividade { get; set; } = null!;
+    public Atividade? Atividade { get; set; }
 }
