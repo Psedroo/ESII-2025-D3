@@ -6,9 +6,7 @@
 @inject NavigationManager Navigation
 @using ES2Real.Components.Layout
 @inject HttpClient Http
-@rendermode InteractiveServer   
-
-
+@rendermode InteractiveServer
 
 <BackButton />
 
@@ -44,13 +42,16 @@ else
                         <strong>@atividade.Nome</strong> - @atividade.Descricao<br />
                         <em>@atividade.Data.ToString("dd/MM/yyyy") às @atividade.Hora</em>
                     </div>
-                    <button class="btn btn-danger btn-sm" @onclick="() => RemoverAtividade(atividade.Id)">Remover</button>
+                    <div>
+                        <button class="btn btn-primary btn-sm me-2" @onclick="() => EditarAtividade(atividade)">Editar</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => RemoverAtividade(atividade.Id)">Remover</button>
+                    </div>
                 </li>
             }
         </ul>
     }
 
-    <h5>Adicionar Nova Atividade</h5>
+    <h5>@(editandoAtividade ? "Editar Atividade" : "Adicionar Nova Atividade")</h5>
     <div class="card p-3 mb-4">
         <div class="mb-3">
             <label class="form-label">Nome</label>
@@ -69,9 +70,12 @@ else
             <input type="time" class="form-control" value="@horaString" @onchange="OnHoraChanged" />
         </div>
         <button type="button" class="btn btn-success" @onclick="SalvarAtividade" @onclick:preventDefault>
-            Salvar Atividade
+            @(editandoAtividade ? "Atualizar Atividade" : "Salvar Atividade")
         </button>
-
+        @if (editandoAtividade)
+        {
+            <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarEdicao">Cancelar</button>
+        }
     </div>
 
     <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
@@ -83,10 +87,11 @@ else
 
     private Evento? evento;
     private List<Atividade> atividades = new();
-
     private Atividade novaAtividade = new();
     private string dataString = string.Empty;
     private string horaString = string.Empty;
+    private bool editandoAtividade = false;
+    private int? atividadeIdEditando = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -95,14 +100,13 @@ else
 
     private async Task CarregarEvento()
     {
-        // Desanexa o objeto atual (caso já esteja em cache no tracking do contexto)
         if (evento != null)
         {
             Db.Entry(evento).State = EntityState.Detached;
         }
 
         evento = await Db.Eventos
-            .AsNoTracking() // <- importante para garantir que vem da base de dados
+            .AsNoTracking()
             .Include(e => e.EventoAtividades)
             .ThenInclude(ea => ea.Atividade)
             .FirstOrDefaultAsync(e => e.Id == id);
@@ -116,115 +120,130 @@ else
                 .ToList();
         }
 
-        StateHasChanged(); // <- força renderização
+        StateHasChanged();
     }
 
+    private void EditarAtividade(Atividade atividade)
+    {
+        editandoAtividade = true;
+        atividadeIdEditando = atividade.Id;
+        novaAtividade = new Atividade
+        {
+            Id = atividade.Id,
+            Nome = atividade.Nome,
+            Descricao = atividade.Descricao,
+            Data = atividade.Data,
+            Hora = atividade.Hora,
+            EventoAtividades = new List<Evento_Atividade>
+            {
+                new Evento_Atividade { IdEvento = id }
+            }
+        };
+        dataString = atividade.Data.ToString("yyyy-MM-dd");
+        horaString = atividade.Hora.ToString(@"hh\:mm");
+        StateHasChanged();
+    }
 
+    private void CancelarEdicao()
+    {
+        editandoAtividade = false;
+        atividadeIdEditando = null;
+        novaAtividade = new();
+        dataString = string.Empty;
+        horaString = string.Empty;
+        StateHasChanged();
+    }
 
     private async Task SalvarAtividade()
-{
-    Console.WriteLine("Funcao chamada");
-    try
     {
         Console.WriteLine("⏳ Iniciando SalvarAtividade");
 
-        // Validar e aplicar data
-        if (DateTime.TryParse(dataString, out var data))
+        try
         {
-            novaAtividade.Data = data;
-            Console.WriteLine($"📅 Data válida: {data}");
-        }
-        else
-        {
-            Console.WriteLine("❌ Data inválida");
-            return; // evita continuar com dados inválidos
-        }
-
-        // Validar e aplicar hora
-        if (TimeSpan.TryParse(horaString, out var hora))
-        {
-            novaAtividade.Hora = hora;
-            Console.WriteLine($"⏰ Hora válida: {hora}");
-        }
-        else
-        {
-            Console.WriteLine("❌ Hora inválida");
-            return;
-        }
-
-        // Associar apenas o ID do evento
-        novaAtividade.EventoAtividades = new List<Evento_Atividade>
-        {
-            new Evento_Atividade
+            if (DateTime.TryParse(dataString, out var data))
             {
-                IdEvento = id,
-                Evento = null,      // evita erro de model binding
-                Atividade = null    // evita erro de model binding
+                novaAtividade.Data = data;
+                Console.WriteLine($"📅 Data válida: {data}");
             }
-        };
+            else
+            {
+                Console.WriteLine("❌ Data inválida");
+                return;
+            }
 
-        // Log do JSON
-        Console.WriteLine("📦 JSON a enviar:");
-        Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(novaAtividade));
+            if (TimeSpan.TryParse(horaString, out var hora))
+            {
+                novaAtividade.Hora = hora;
+                Console.WriteLine($"⏰ Hora válida: {hora}");
+            }
+            else
+            {
+                Console.WriteLine("❌ Hora inválida");
+                return;
+            }
 
-        // Enviar para API
-        var response = await Http.PostAsJsonAsync("api/atividade", novaAtividade);
+            novaAtividade.EventoAtividades = new List<Evento_Atividade>
+            {
+                new Evento_Atividade
+                {
+                    IdEvento = id,
+                    Evento = null,
+                    Atividade = null
+                }
+            };
 
+            Console.WriteLine("📦 JSON a enviar:");
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(novaAtividade));
+
+            HttpResponseMessage response;
+
+            if (editandoAtividade && atividadeIdEditando.HasValue)
+            {
+                novaAtividade.Id = atividadeIdEditando.Value;
+                response = await Http.PutAsJsonAsync($"api/atividade/{atividadeIdEditando.Value}", novaAtividade);
+            }
+            else
+            {
+                response = await Http.PostAsJsonAsync("api/atividade", novaAtividade);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine(editandoAtividade ? "✅ Atividade atualizada com sucesso." : "✅ Atividade criada com sucesso.");
+                await CarregarEvento();
+                CancelarEdicao();
+            }
+            else
+            {
+                var erro = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"❌ Erro HTTP ({(int)response.StatusCode}): {erro}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"🔥 Erro inesperado: {ex.Message}");
+        }
+    }
+
+    private async Task RemoverAtividade(int atividadeId)
+    {
+        var response = await Http.DeleteAsync($"api/atividade/{atividadeId}");
         if (response.IsSuccessStatusCode)
         {
-            Console.WriteLine("✅ Atividade criada com sucesso.");
-            await CarregarEvento(); // atualizar a lista
-            StateHasChanged();      // forçar renderização
-
-            // Limpar formulário
-            novaAtividade = new();
-            dataString = string.Empty;
-            horaString = string.Empty;
+            await CarregarEvento();
         }
         else
         {
             var erro = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"❌ Erro HTTP ({(int)response.StatusCode}): {erro}");
+            Console.WriteLine($"❌ Erro ao remover atividade: {erro}");
         }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"🔥 Erro inesperado: {ex.Message}");
-    }
-}
-
-
-
-
-    private async Task RemoverAtividade(int atividadeId)
-    {
-        // Remover primeiro da tabela de junção
-        var ligacoes = await Db.Set<Evento_Atividade>()
-            .Where(ea => ea.IdEvento == id && ea.IdAtividade == atividadeId)
-            .ToListAsync();
-
-        Db.Set<Evento_Atividade>().RemoveRange(ligacoes);
-
-        // Se a atividade não estiver ligada a outro evento, pode apagar
-        var outrasLigacoes = await Db.Set<Evento_Atividade>()
-            .CountAsync(ea => ea.IdAtividade == atividadeId && ea.IdEvento != id);
-
-        if (outrasLigacoes == 0)
-        {
-            var atividade = await Db.Atividades.FindAsync(atividadeId);
-            if (atividade != null)
-                Db.Atividades.Remove(atividade);
-        }
-
-        await Db.SaveChangesAsync();
-        await CarregarEvento();
     }
 
     private void Voltar()
     {
         Navigation.NavigateTo("/Eventos");
     }
-    
+
     private void OnDataChanged(ChangeEventArgs e)
     {
         dataString = e.Value?.ToString() ?? string.Empty;
@@ -242,6 +261,4 @@ else
             novaAtividade.Hora = hora;
         }
     }
-
-    
 }
