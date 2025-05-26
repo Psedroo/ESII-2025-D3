@@ -105,4 +105,31 @@ public class ParticipanteController : ControllerBase
             return StatusCode(500, $"Erro ao atualizar: {ex.Message}");
         }
     }
+    
+    // GET: api/participante/inscritos-com-eventos
+    [HttpGet("inscritos-com-eventos")]
+    public async Task<ActionResult<IEnumerable<object>>> GetParticipantesComEventos()
+    {
+        try
+        {
+            var dados = await _context.BilheteParticipante
+                .Include(bp => bp.Participante).ThenInclude(p => p.Utilizador)
+                .Include(bp => bp.Bilhete).ThenInclude(b => b.Evento)
+                .Select(bp => new
+                {
+                    ParticipanteId = bp.Participante.Id,
+                    Nome = bp.Participante.Nome,
+                    Email = bp.Participante.Utilizador.Email,
+                    Evento = bp.Bilhete.Evento.Nome
+                })
+                .ToListAsync();
+
+            return Ok(dados);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Erro ao obter inscritos: {ex.Message}");
+        }
+    }
+
 }
