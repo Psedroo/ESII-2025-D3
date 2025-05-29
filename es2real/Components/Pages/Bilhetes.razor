@@ -1,0 +1,147 @@
+﻿@page "/Bilhetes/{eventoId:int}"
+@using ES2Real.Models
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
+@using ES2Real.Components.Layout
+@inject HttpClient Http
+@inject UserSessionService _userSessionService
+@rendermode InteractiveServer
+
+<BackButton />
+
+<h3>Gerir Bilhetes do Evento</h3>
+
+@if (!string.IsNullOrEmpty(mensagemErro))
+{
+    <div class="alert alert-danger">@mensagemErro</div>
+}
+@if (!string.IsNullOrEmpty(mensagemSucesso))
+{
+    <div class="alert alert-success">@mensagemSucesso</div>
+}
+
+@if (evento == null)
+{
+    <p>Carregando evento...</p>
+}
+else
+{
+    <h4>@evento.Nome</h4>
+    <p><strong>Capacidade Máxima:</strong> @evento.CapacidadeMax</p>
+    <p><strong>Total de bilhetes criados:</strong> @TotalBilhetesCriados</p>
+    <p class="text-muted">Restantes: @(evento.CapacidadeMax - TotalBilhetesCriados)</p>
+
+    <EditForm Model="novoBilhete" OnValidSubmit="CriarBilhete">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Tipo</label>
+            <InputSelect class="form-select" @bind-Value="novoBilhete.Tipo">
+                @foreach (TipoBilhete tipo in Enum.GetValues(typeof(TipoBilhete)))
+                {
+                    <option value="@tipo">@tipo</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descrição</label>
+            <InputText class="form-control" @bind-Value="novoBilhete.Descricao" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Quantidade</label>
+            <InputNumber class="form-control" @bind-Value="novoBilhete.Quantidade" min="1" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Preço</label>
+            <InputNumber class="form-control" @bind-Value="novoBilhete.Preco" min="0" step="0.01" />
+        </div>
+
+        <button class="btn btn-success" type="submit" disabled="@(evento.CapacidadeMax - TotalBilhetesCriados < novoBilhete.Quantidade)">
+            Criar Bilhete
+        </button>
+    </EditForm>
+
+    <hr />
+
+    <h5>Bilhetes Existentes</h5>
+    <ul>
+        @foreach (var b in bilhetes)
+        {
+            <li>@b.Tipo - @b.Descricao - @b.Quantidade bilhetes - @b.Preco€</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public int eventoId { get; set; }
+
+    private Evento? evento;
+    private List<Bilhete> bilhetes = new();
+    private Bilhete novoBilhete = new();
+    private string mensagemErro = string.Empty;
+    private string mensagemSucesso = string.Empty;
+
+    private int TotalBilhetesCriados => bilhetes.Sum(b => b.Quantidade);
+
+    protected override async Task OnInitializedAsync()
+    {
+        evento = await Db.Eventos.FindAsync(eventoId);
+        if (evento != null)
+        {
+            bilhetes = await Db.Bilhetes.Where(b => b.idEvento == eventoId).ToListAsync();
+            novoBilhete = new Bilhete { idEvento = eventoId, Tipo = TipoBilhete.Normal, Quantidade = 0, Preco = 0 };
+        }
+    }
+
+    private async Task CriarBilhete()
+    {
+        mensagemErro = string.Empty;
+        mensagemSucesso = string.Empty;
+
+        if (evento == null)
+        {
+            mensagemErro = "Evento não carregado.";
+            return;
+        }
+
+        if (novoBilhete.Quantidade <= 0)
+        {
+            mensagemErro = "A quantidade deve ser maior que zero.";
+            return;
+        }
+
+        if (TotalBilhetesCriados + novoBilhete.Quantidade > evento.CapacidadeMax)
+        {
+            mensagemErro = "A quantidade excede a capacidade do evento.";
+            return;
+        }
+
+        try
+        {
+            novoBilhete.idEvento = eventoId;
+            Db.Bilhetes.Add(novoBilhete);
+            await Db.SaveChangesAsync();
+
+            bilhetes.Add(novoBilhete);
+            mensagemSucesso = "Bilhete criado com sucesso!";
+
+            novoBilhete = new Bilhete { idEvento = eventoId, Tipo = TipoBilhete.Normal, Quantidade = 0, Preco = 0 };
+        }
+        catch (Exception ex)
+        {
+            mensagemErro = $"Erro ao criar bilhete: {ex.Message} - {ex.InnerException?.Message}";
+
+        }
+    }
+
+    private void Voltar()
+    {
+        Navigation.NavigateTo("/Eventos");
+    }
+
+}

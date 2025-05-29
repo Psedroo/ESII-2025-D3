@@ -88,6 +88,7 @@
                         <button class="btn btn-primary me-2" @onclick="() => EditarEvento(evento)">Editar</button>
                         <button class="btn btn-danger" @onclick="() => RemoverEvento(evento.Id)">Remover</button>
                         <button class="btn btn-secondary" @onclick="() => GerirAtividades(evento.Id)">Atividades</button>
+                        <button class="btn btn-success" @onclick="() => CriarBilhetes(evento.Id)">Bilhetes</button>
                     </td>
                 </tr>
             }
@@ -229,6 +230,12 @@
             Console.WriteLine($"Erro ao remover evento: {ex.Message}");
         }
     }
+    
+    private void CriarBilhetes(int eventoId)
+    {
+        NavigationManager.NavigateTo($"/Bilhetes/{eventoId}");
+    }
+
 
     private class Evento
     {

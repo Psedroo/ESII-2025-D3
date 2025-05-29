@@ -11,11 +11,14 @@ public enum TipoBilhete
 public class Bilhete
 {
     [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     
     public TipoBilhete Tipo { get; set; }
     
     public string Descricao { get; set; } = string.Empty;
+    
+    [Range(1, int.MaxValue, ErrorMessage = "A quantidade deve ser maior que zero.")]
     public int Quantidade { get; set; }
     
     public decimal Preco { get; set; }
