@@ -82,8 +82,7 @@ else
                 <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarEdicao">Cancelar</button>
             }
         </div>
-
-        <button class="btn btn-secondary" @onclick="Voltar">Voltar</button>
+        
     }
 }
 
@@ -165,29 +164,29 @@ else
 
     private async Task SalvarAtividade()
     {
-        Console.WriteLine("⏳ Iniciando SalvarAtividade");
+        Console.WriteLine("Iniciando SalvarAtividade");
 
         try
         {
             if (DateTime.TryParse(dataString, out var data))
             {
                 novaAtividade.Data = data;
-                Console.WriteLine($"📅 Data válida: {data}");
+                Console.WriteLine($"Data válida: {data}");
             }
             else
             {
-                Console.WriteLine("❌ Data inválida");
+                Console.WriteLine("Data inválida");
                 return;
             }
 
             if (TimeSpan.TryParse(horaString, out var hora))
             {
                 novaAtividade.Hora = hora;
-                Console.WriteLine($"⏰ Hora válida: {hora}");
+                Console.WriteLine($"Hora válida: {hora}");
             }
             else
             {
-                Console.WriteLine("❌ Hora inválida");
+                Console.WriteLine("Hora inválida");
                 return;
             }
 
@@ -201,7 +200,7 @@ else
                 }
             };
 
-            Console.WriteLine("📦 JSON a enviar:");
+            Console.WriteLine("JSON a enviar:");
             Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(novaAtividade));
 
             HttpResponseMessage response;
@@ -218,19 +217,19 @@ else
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine(editandoAtividade ? "✅ Atividade atualizada com sucesso." : "✅ Atividade criada com sucesso.");
+                Console.WriteLine(editandoAtividade ? "Atividade atualizada com sucesso." : "Atividade criada com sucesso.");
                 await CarregarEvento();
                 CancelarEdicao();
             }
             else
             {
                 var erro = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"❌ Erro HTTP ({(int)response.StatusCode}): {erro}");
+                Console.WriteLine($"Erro HTTP ({(int)response.StatusCode}): {erro}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"🔥 Erro inesperado: {ex.Message}");
+            Console.WriteLine($"Erro inesperado: {ex.Message}");
         }
     }
 
@@ -244,7 +243,7 @@ else
         else
         {
             var erro = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"❌ Erro ao remover atividade: {erro}");
+            Console.WriteLine($"Erro ao remover atividade: {erro}");
         }
     }
 

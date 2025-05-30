@@ -1,6 +1,12 @@
 ﻿@page "/registar"
 
+
+@inject ApplicationDbContext Db
+@inject NavigationManager Navigation
 @using ES2Real.Components.Layout
+@inject HttpClient Http
+@inject UserSessionService _userSessionService
+@rendermode InteractiveServer
 
 <h3></h3>
 
@@ -143,5 +149,10 @@
     public class Verificar
     {
         public string vefificar { get; set; } = string.Empty;
+    }
+    
+    private void Voltar()
+    {
+        Navigation.NavigateTo("/login");
     }
 }
