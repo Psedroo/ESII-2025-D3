@@ -48,6 +48,17 @@ else
                         {
                             <button class="btn btn-primary btn-sm me-2" @onclick="() => EditarAtividade(atividade)">Editar</button>
                             <button class="btn btn-danger btn-sm" @onclick="() => RemoverAtividade(atividade.Id)">Remover</button>
+                        } else if (cargo == "Participante")
+                        {
+                            @if (atividadesInscritas.Contains(atividade.Id))
+                            {
+                                <button class="btn btn-secondary btn-sm" disabled>Inscrito</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-success btn-sm" @onclick="() => InscreverParticipante(atividade.Id)">Inscrever</button>
+                            }
+
                         }
                     </div>
                 </li>
@@ -98,14 +109,34 @@ else
     private bool editandoAtividade = false;
     private int? atividadeIdEditando = null;
     private string cargo;
+    
+    private HashSet<int> atividadesInscritas = new(); // IDs de atividades em que o participante já está inscrito
 
     protected override async Task OnInitializedAsync()
     {
         await CarregarEvento();
         
         cargo = _userSessionService.GetUsuario().TipoUsuario;
+        
+        if (cargo == "Participante")
+        {
+            await CarregarAtividadesInscritas();
+        }
     }
+    
+    private async Task CarregarAtividadesInscritas()
+    {
+        var utilizador = _userSessionService.GetUsuario();
 
+        var inscricoes = await Http.GetFromJsonAsync<List<AtividadeParticipanteDto>>(
+            $"api/atividadeparticipante/participante/{utilizador.Id}");
+
+        if (inscricoes != null)
+        {
+            atividadesInscritas = inscricoes.Select(i => i.IdAtividade).ToHashSet();
+        }
+    }
+    
     private async Task CarregarEvento()
     {
         if (evento != null)
@@ -269,4 +300,70 @@ else
             novaAtividade.Hora = hora;
         }
     }
+    
+    private async Task InscreverParticipante(int atividadeId)
+    {
+        var utilizador = _userSessionService.GetUsuario();
+        
+        Console.WriteLine((utilizador.Username));
+        
+        // Buscar bilhetes associados ao evento
+        var bilhetes = await Http.GetFromJsonAsync<List<Bilhete>>($"api/bilhete/evento/{id}");
+
+        if (bilhetes == null || bilhetes.Count == 0)
+        {
+            Console.WriteLine("Nenhum bilhete disponível para este evento.");
+            // Aqui poderias mostrar uma mensagem no UI se quiseres
+            return;
+        }
+
+        // Verificar se o utilizador tem bilhete para o evento
+        var bilheteComParticipante = await Http.GetFromJsonAsync<List<BilheteParticipanteDto>>(
+            $"api/bilheteparticipante/participante/{utilizador.Id}");
+
+        var temBilheteParaEvento = bilheteComParticipante.Any(bp =>
+            bilhetes.Any(b => b.Id == bp.IdBilhete && b.idEvento == id));
+
+        if (!temBilheteParaEvento)
+        {
+            Console.WriteLine("Participante não tem bilhete para este evento.");
+            // Aqui poderias redirecionar ou sugerir compra de bilhete
+            return;
+        }
+
+        // Criar inscrição (ajusta a entidade conforme a tua API)
+        var inscricao = new AtividadeParticipanteDto
+        {
+            IdAtividade = atividadeId,
+            IdParticipante = utilizador.Id
+        };
+        Console.WriteLine(atividadeId);
+        Console.WriteLine(utilizador.Username);
+        
+        var response = await Http.PostAsJsonAsync("api/atividadeparticipante/inscrever", inscricao);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("Inscrição realizada com sucesso.");
+        }
+        else
+        {
+            Console.WriteLine($"Erro ao inscrever: {response.StatusCode}");
+        }
+        
+        StateHasChanged();
+    }
+    
+    public class BilheteParticipanteDto
+    {
+        public int IdBilhete { get; set; }
+        public int IdParticipante { get; set; }
+    }
+
+    public class AtividadeParticipanteDto
+    {
+        public int IdAtividade { get; set; }
+        public int IdParticipante { get; set; }
+    }
+
 }

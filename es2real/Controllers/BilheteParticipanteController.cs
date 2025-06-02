@@ -15,22 +15,23 @@ namespace ES2Real.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<BilheteParticipanteEventoDto>>> GetMyEventos()
+        // GET: api/BilheteParticipante/participante/5
+        [HttpGet("participante/{idParticipante}")]
+        public async Task<ActionResult<IEnumerable<BilheteParticipanteDto>>> GetBilhetesDoParticipante(int idParticipante)
         {
-            var resultado = await _context.BilheteParticipante
-                .Include(bp => bp.Bilhete)
-                .ThenInclude(b => b.Evento)
-                .Select(bp => new BilheteParticipanteEventoDto
+            var bilhetes = await _context.BilheteParticipante
+                .Where(bp => bp.IdParticipante == idParticipante)
+                .Select(bp => new BilheteParticipanteDto
                 {
                     IdBilhete = bp.IdBilhete,
-                    Evento = bp.Bilhete.Evento
+                    IdParticipante = bp.IdParticipante
                 })
                 .ToListAsync();
 
-            return Ok(resultado);
+            return Ok(bilhetes);
         }
 
+        // DELETE: api/BilheteParticipante/cancelar/5
         [HttpDelete("cancelar/{idBilhete}")]
         public IActionResult CancelarInscricao(int idBilhete)
         {
@@ -52,9 +53,9 @@ namespace ES2Real.Controllers
         }
     }
 
-    public class BilheteParticipanteEventoDto
+    public class BilheteParticipanteDto
     {
         public int IdBilhete { get; set; }
-        public Evento Evento { get; set; } = null!;
+        public int IdParticipante { get; set; }
     }
-}
+}   

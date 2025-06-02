@@ -5,7 +5,7 @@ public enum TipoBilhete
 {
     VIP,
     Normal,
-    NormalPlus // Replace "Normal+" with a valid name (no special characters)
+    NormalPlus 
 }
 
 public class Bilhete
