@@ -16,6 +16,24 @@ namespace ES2Real.ApiControllers
             _context = context;
         }
 
+        // GET: api/AtividadeParticipante/meus
+        [HttpGet("meus")]
+        public async Task<ActionResult<List<int>>> GetMinhasAtividades([FromQuery] int idParticipante)
+        {
+            if (idParticipante == 0)
+                return BadRequest("ID do participante inválido.");
+
+            var atividades = await _context.AtividadeParticipantes
+                .Where(ap => ap.IdParticipante == idParticipante)
+                .Select(ap => ap.IdAtividade)
+                .ToListAsync();
+
+            if (atividades == null || atividades.Count == 0)
+                return NotFound("Nenhuma atividade encontrada para o participante.");
+
+            return Ok(atividades);
+        }
+
         // GET: api/AtividadeParticipante/evento/5
         [HttpGet("evento/{idEvento}")]
         public async Task<ActionResult<List<Atividade>>> GetAtividadesPorEvento(int idEvento)
@@ -24,7 +42,7 @@ namespace ES2Real.ApiControllers
                 .Where(a => a.EventoAtividades.Any(ea => ea.IdEvento == idEvento))
                 .ToListAsync();
 
-            return atividades;
+            return Ok(atividades);
         }
 
         // GET: api/AtividadeParticipante/participante/5
@@ -41,9 +59,7 @@ namespace ES2Real.ApiControllers
                 .ToListAsync();
 
             if (inscricoes == null || inscricoes.Count == 0)
-            {
                 return NotFound();
-            }
 
             return Ok(inscricoes);
         }
@@ -57,7 +73,7 @@ namespace ES2Real.ApiControllers
             Console.WriteLine($"[INFO] IdAtividade recebido: {inscricao.IdAtividade}");
 
             if (userId == 0)
-                return Unauthorized();
+                return BadRequest("ID do participante inválido.");
 
             // Verifica se já está inscrito
             bool jaInscrito = await _context.AtividadeParticipantes
@@ -100,6 +116,25 @@ namespace ES2Real.ApiControllers
             return Ok();
         }
 
+        // DELETE: api/AtividadeParticipante/cancelar/{idAtividade}
+        [HttpDelete("cancelar/{idAtividade}")]
+        public async Task<IActionResult> CancelarInscricaoAtividade(int idAtividade, [FromQuery] int idParticipante)
+        {
+            if (idParticipante == 0)
+                return BadRequest("ID do participante inválido.");
+
+            var registo = await _context.AtividadeParticipantes
+                .FirstOrDefaultAsync(ap => ap.IdAtividade == idAtividade && ap.IdParticipante == idParticipante);
+
+            if (registo == null)
+                return NotFound("Inscrição não encontrada.");
+
+            _context.AtividadeParticipantes.Remove(registo);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         private int? GetUserId()
         {
             if (User.Identity?.IsAuthenticated == true)
@@ -108,11 +143,9 @@ namespace ES2Real.ApiControllers
                 if (int.TryParse(userIdStr, out int userId))
                     return userId;
             }
-
             return null;
         }
 
-        // DTOs usados
         public class InscricaoDto
         {
             public int IdAtividade { get; set; }

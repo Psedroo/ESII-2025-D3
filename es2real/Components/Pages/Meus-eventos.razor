@@ -1,321 +1,368 @@
-﻿@page "/Meus-eventos"
+﻿    @page "/Meus-eventos"
 
-@using ES2Real.Components.Layout
-@using System.Net.Http.Json
-@rendermode InteractiveServer
-@inject HttpClient Http
+    @using ES2Real.Components.Layout
+    @using System.Net.Http.Json
+    @inject UserSessionService UserSessionService
+    @rendermode InteractiveServer
+    @inject HttpClient Http
 
-<h3>Meus Eventos</h3>
+    <h3>Meus Eventos</h3>
 
-<BackButton />
+    <BackButton />
 
-<div class="mb-3 d-flex gap-2 flex-wrap">
-    <input class="form-control" placeholder="Filtrar por Categoria" @bind="FiltroCategoria" @bind:event="oninput" />
-    <input class="form-control" placeholder="Filtrar por Local" @bind="FiltroLocal" @bind:event="oninput" />
-    <input class="form-control" type="date" @bind="FiltroData" />
-</div>
+    <div class="mb-3 d-flex gap-2 flex-wrap">
+        <input class="form-control" placeholder="Filtrar por Categoria" @bind="FiltroCategoria" @bind:event="oninput" />
+        <input class="form-control" placeholder="Filtrar por Local" @bind="FiltroLocal" @bind:event="oninput" />
+        <input class="form-control" type="date" @bind="FiltroData" />
+    </div>
 
-<div class="mt-4">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Data</th>
-                <th>Local</th>
-                <th>Categoria</th>
-                <th>Atividades</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var e in eventosFiltrados)
-            {
+    <div class="mt-4">
+        <table class="table">
+            <thead>
                 <tr>
-                    <td>@e.Evento.Nome</td>
-                    <td>@e.Evento.Data.ToString("dd/MM/yyyy")</td>
-                    <td>@e.Evento.Local</td>
-                    <td>@e.Evento.Categoria</td>
-                    <td>
-                        <button class="btn btn-info btn-sm" @onclick="() => ToggleAtividades(e.Evento.Id)">
-                            @if (eventoAtividadesVisiveis.Contains(e.Evento.Id))
-                            {
-                                <span>Esconder</span>
-                            }
-                            else
-                            {
-                                <span>Mostrar</span>
-                            }
-                        </button>
-                    </td>
-                    <td>
-                        <button class="btn btn-danger" @onclick="() => CancelarInscricao(e.IdBilhete)">Cancelar Inscrição</button>
-                    </td>
+                    <th>Nome</th>
+                    <th>Data</th>
+                    <th>Local</th>
+                    <th>Categoria</th>
+                    <th>Atividades</th>
+                    <th>Ações</th>
                 </tr>
-                @if (eventoAtividadesVisiveis.Contains(e.Evento.Id))
+            </thead>
+            <tbody>
+                @foreach (var e in eventosFiltrados)
                 {
                     <tr>
-                        <td colspan="6" class="p-0">
-                            @if (atividadesPorEvento.TryGetValue(e.Evento.Id, out var atividades) && atividades.Any())
-                            {
-                                <table class="table mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Inscrito</th>
-                                            <th>Nome</th>
-                                            <th>Descrição</th>
-                                            <th>Data</th>
-                                            <th>Hora</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var atividade in atividades)
-                                        {
-                                            <tr>
-                                                <td>
-                                                    <input type="checkbox" checked="@IsInscrito(atividade.Id)" 
-                                                           @onchange="(e) => OnCheckboxChanged(e.Value, atividade.Id)" />
-                                                </td>
-                                                <td>@atividade.Nome</td>
-                                                <td>@atividade.Descricao</td>
-                                                <td>@atividade.Data.ToString("dd/MM/yyyy")</td>
-                                                <td>@atividade.Hora.ToString(@"hh\:mm")</td>
-                                                <td>
-                                                    @if (IsInscrito(atividade.Id))
-                                                    {
-                                                        <button class="btn btn-sm btn-warning" @onclick="() => CancelarInscricaoAtividade(atividade.Id)">Cancelar Inscrição</button>
-                                                    }
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            }
-                            else
-                            {
-                                <div class="p-2">Sem atividades para este evento.</div>
-                            }
+                        <td>@e.Evento.Nome</td>
+                        <td>@e.Evento.Data.ToString("dd/MM/yyyy")</td>
+                        <td>@e.Evento.Local</td>
+                        <td>@e.Evento.Categoria</td>
+                        <td>
+                            <button class="btn btn-info btn-sm" @onclick="() => ToggleAtividades(e.Evento.Id)">
+                                @if (eventoAtividadesVisiveis.Contains(e.Evento.Id))
+                                {
+                                    <span>Esconder</span>
+                                }
+                                else
+                                {
+                                    <span>Mostrar</span>
+                                }
+                            </button>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" @onclick="() => CancelarInscricao(e.IdBilhete)">Cancelar Inscrição</button>
                         </td>
                     </tr>
+                    @if (eventoAtividadesVisiveis.Contains(e.Evento.Id))
+                    {
+                        <tr>
+                            <td colspan="6" class="p-0">
+                                @if (atividadesPorEvento.TryGetValue(e.Evento.Id, out var atividades) && atividades.Any())
+                                {
+                                    <table class="table mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Inscrito</th>
+                                                <th>Nome</th>
+                                                <th>Descrição</th>
+                                                <th>Data</th>
+                                                <th>Hora</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var atividade in atividades)
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <input type="checkbox" checked="@IsInscrito(atividade.Id)" 
+                                                               @onchange="(e) => OnCheckboxChanged(e.Value, atividade.Id)" />
+                                                    </td>
+                                                    <td>@atividade.Nome</td>
+                                                    <td>@atividade.Descricao</td>
+                                                    <td>@atividade.Data.ToString("dd/MM/yyyy")</td>
+                                                    <td>@atividade.Hora.ToString(@"hh\:mm")</td>
+                                                    <td>
+                                                        @if (IsInscrito(atividade.Id))
+                                                        {
+                                                            <button class="btn btn-sm btn-warning" @onclick="() => CancelarInscricaoAtividade(atividade.Id)">Cancelar Inscrição</button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                                else
+                                {
+                                    <div class="p-2">Sem atividades para este evento.</div>
+                                }
+                            </td>
+                        </tr>
+                    }
                 }
-            }
-        </tbody>
-    </table>
-</div>
+            </tbody>
+        </table>
+    </div>
 
-@code {
-    private List<BilheteParticipanteEventoDto> eventos = new();
-    private List<BilheteParticipanteEventoDto> eventosFiltrados = new();
+    @code {
+        private List<BilheteParticipanteEventoDto> eventos = new();
+        private List<BilheteParticipanteEventoDto> eventosFiltrados = new();
 
-    // Evento Ids que estão mostrando atividades
-    private HashSet<int> eventoAtividadesVisiveis = new();
+        // Evento Ids que estão mostrando atividades
+        private HashSet<int> eventoAtividadesVisiveis = new();
 
-    // Atividades agrupadas por evento Id
-    private Dictionary<int, List<AtividadeDto>> atividadesPorEvento = new();
+        // Atividades agrupadas por evento Id
+        private Dictionary<int, List<AtividadeDto>> atividadesPorEvento = new();
 
-    // Atividades inscritas pelo utilizador (IdAtividade)
-    private HashSet<int> atividadesInscritas = new();
+        // Atividades inscritas pelo utilizador (IdAtividade)
+        private HashSet<int> atividadesInscritas = new();
 
-    private string filtroCategoria = string.Empty;
-    private string filtroLocal = string.Empty;
-    private DateTime? filtroData = null;
+        private string filtroCategoria = string.Empty;
+        private string filtroLocal = string.Empty;
+        private DateTime? filtroData = null;
 
-    protected override async Task OnInitializedAsync()
-    {
-        await CarregarEventos();
-        await CarregarInscricoesAtividades();
-    }
-
-    private async Task CarregarEventos()
-    {
-        try
+        protected override async Task OnInitializedAsync()
         {
-            eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>("api/BilheteParticipante");
-            FiltrarEventos();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
-        }
-    }
-
-    private void FiltrarEventos()
-    {
-        eventosFiltrados = eventos
-            .Where(e =>
-                (string.IsNullOrWhiteSpace(filtroCategoria) || e.Evento.Categoria.Contains(filtroCategoria, StringComparison.OrdinalIgnoreCase)) &&
-                (string.IsNullOrWhiteSpace(filtroLocal) || e.Evento.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase)) &&
-                (!filtroData.HasValue || e.Evento.Data.Date == filtroData.Value.Date)
-            )
-            .ToList();
-    }
-
-    private async Task CancelarInscricao(int idBilhete)
-    {
-        try
-        {
-            var response = await Http.DeleteAsync($"api/BilheteParticipante/cancelar/{idBilhete}");
-            if (response.IsSuccessStatusCode)
-            {
-                await CarregarEventos();
-                eventoAtividadesVisiveis.Clear();
-                atividadesPorEvento.Clear();
-                await CarregarInscricoesAtividades();
-            }
-            else
-            {
-                Console.WriteLine($"Erro ao cancelar inscrição: {response.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro: {ex.Message}");
-        }
-    }
-
-    private async Task ToggleAtividades(int idEvento)
-    {
-        if (eventoAtividadesVisiveis.Contains(idEvento))
-        {
-            eventoAtividadesVisiveis.Remove(idEvento);
-            StateHasChanged();
-            return;
+            await CarregarEventos();
+            await CarregarInscricoesAtividades();
         }
 
-        // Mostrar atividades e carregar se ainda não carregou
-        if (!atividadesPorEvento.ContainsKey(idEvento))
+        private async Task CarregarEventos()
         {
             try
             {
-                var atividades = await Http.GetFromJsonAsync<List<AtividadeDto>>($"api/Eventos/{idEvento}/atividades") ?? new();
-                atividadesPorEvento[idEvento] = atividades;
+                var utilizador = UserSessionService.GetUsuario();
+                if (utilizador == null || utilizador.Id <= 0)
+                {
+                    Console.WriteLine("Usuário não logado ou ID inválido.");
+                    eventos = new List<BilheteParticipanteEventoDto>();
+                    FiltrarEventos();
+                    return;
+                }
+                int idParticipante = utilizador.Id;
+                Console.WriteLine($"[DEBUG] Carregando eventos para idParticipante: {idParticipante}");
+                eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>($"api/BilheteParticipante/eventos/participante/{idParticipante}") ?? new List<BilheteParticipanteEventoDto>();
+                Console.WriteLine($"[DEBUG] Eventos carregados: {eventos.Count}");
+                
+                if (eventos.Any())
+                {
+                    foreach (var e in eventos)
+                    {
+                        Console.WriteLine($"[DEBUG] Evento - IdBilhete: {e.IdBilhete}, " +
+                                          $"Evento.Id: {e.Evento.Id}, " +
+                                          $"Evento.Nome: {e.Evento.Nome}, " +
+                                          $"Evento.Data: {e.Evento.Data:dd/MM/yyyy}, " +
+                                          $"Evento.Local: {e.Evento.Local}, " +
+                                          $"Evento.Categoria: {e.Evento.Categoria}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("[DEBUG] Lista de eventos está vazia.");
+                }
+                
+                FiltrarEventos();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao carregar atividades: {ex.Message}");
-                atividadesPorEvento[idEvento] = new List<AtividadeDto>();
+                Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
+                eventos = new List<BilheteParticipanteEventoDto>();
+                FiltrarEventos();
             }
         }
 
-        eventoAtividadesVisiveis.Add(idEvento);
-    }
-
-    private async Task CarregarInscricoesAtividades()
-    {
-        try
+        private void FiltrarEventos()
         {
-            var inscritos = await Http.GetFromJsonAsync<List<int>>("api/AtividadeParticipante/meus"); // API que retorna ids das atividades inscritas
-            atividadesInscritas = inscritos != null ? new HashSet<int>(inscritos) : new HashSet<int>();
+            eventosFiltrados = eventos
+                .Where(e =>
+                    (string.IsNullOrWhiteSpace(filtroCategoria) || e.Evento.Categoria.Contains(filtroCategoria, StringComparison.OrdinalIgnoreCase)) &&
+                    (string.IsNullOrWhiteSpace(filtroLocal) || e.Evento.Local.Contains(filtroLocal, StringComparison.OrdinalIgnoreCase)) &&
+                    (!filtroData.HasValue || e.Evento.Data.Date == filtroData.Value.Date)
+                )
+                .ToList();
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro ao carregar inscrições em atividades: {ex.Message}");
-            atividadesInscritas = new HashSet<int>();
-        }
-    }
 
-    private bool IsInscrito(int idAtividade) => atividadesInscritas.Contains(idAtividade);
-
-    private async Task OnCheckboxChanged(object? checkedValue, int idAtividade)
-    {
-        var isChecked = checkedValue is bool b && b;
-
-        if (isChecked && !IsInscrito(idAtividade))
+        private async Task CancelarInscricao(int idBilhete)
         {
-            await InscreverNaAtividade(idAtividade);
-        }
-        else if (!isChecked && IsInscrito(idAtividade))
-        {
-            await CancelarInscricaoAtividade(idAtividade);
-        }
-    }
-
-    private async Task InscreverNaAtividade(int idAtividade)
-    {
-        try
-        {
-            var response = await Http.PostAsJsonAsync("api/AtividadeParticipante/inscrever", new { IdAtividade = idAtividade });
-            if (response.IsSuccessStatusCode)
+            try
             {
-                atividadesInscritas.Add(idAtividade);
+                var response = await Http.DeleteAsync($"api/BilheteParticipante/cancelar/{idBilhete}");
+                if (response.IsSuccessStatusCode)
+                {
+                    await CarregarEventos();
+                    eventoAtividadesVisiveis.Clear();
+                    atividadesPorEvento.Clear();
+                    await CarregarInscricoesAtividades();
+                }
+                else
+                {
+                    Console.WriteLine($"Erro ao cancelar inscrição: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro: {ex.Message}");
+            }
+        }
+
+        private async Task ToggleAtividades(int idEvento)
+        {
+            if (eventoAtividadesVisiveis.Contains(idEvento))
+            {
+                eventoAtividadesVisiveis.Remove(idEvento);
                 StateHasChanged();
-                Console.WriteLine("Inscrição realizada com sucesso!");
+                return;
             }
-            else
+
+            // Mostrar atividades e carregar se ainda não carregou
+            if (!atividadesPorEvento.ContainsKey(idEvento))
             {
-                Console.WriteLine($"Erro na inscrição: {response.StatusCode}");
+                try
+                {
+                    var atividades = await Http.GetFromJsonAsync<List<AtividadeDto>>($"api/Eventos/{idEvento}/atividades") ?? new();
+                    atividadesPorEvento[idEvento] = atividades;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erro ao carregar atividades: {ex.Message}");
+                    atividadesPorEvento[idEvento] = new List<AtividadeDto>();
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro: {ex.Message}");
-        }
-    }
 
-    private async Task CancelarInscricaoAtividade(int idAtividade)
-    {
-        try
+            eventoAtividadesVisiveis.Add(idEvento);
+        }
+
+        private async Task CarregarInscricoesAtividades()
         {
-            var response = await Http.DeleteAsync($"api/AtividadeParticipante/cancelar/{idAtividade}");
-            if (response.IsSuccessStatusCode)
+            try
             {
-                atividadesInscritas.Remove(idAtividade);
-                StateHasChanged();
-                Console.WriteLine("Cancelamento de inscrição realizado com sucesso!");
+                var utilizador = UserSessionService.GetUsuario();
+                if (utilizador == null || utilizador.Id <= 0)
+                {
+                    Console.WriteLine("Usuário não logado ou ID inválido.");
+                    atividadesInscritas = new HashSet<int>();
+                    return;
+                }
+                int idParticipante = utilizador.Id;
+                Console.WriteLine($"[DEBUG] Enviando requisição para api/AtividadeParticipante/meus?idParticipante={idParticipante}");
+                var inscritos = await Http.GetFromJsonAsync<List<int>>($"api/AtividadeParticipante/meus?idParticipante={idParticipante}");
+                atividadesInscritas = inscritos != null ? new HashSet<int>(inscritos) : new HashSet<int>();
+                Console.WriteLine($"[DEBUG] Atividades inscritas carregadas: {inscritos?.Count ?? 0}");
             }
-            else
+            catch (HttpRequestException ex)
             {
-                Console.WriteLine($"Erro ao cancelar inscrição: {response.StatusCode}");
+                Console.WriteLine($"Erro ao carregar inscrições em atividades: {ex.Message}, StatusCode: {ex.StatusCode}");
+                atividadesInscritas = new HashSet<int>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro inesperado ao carregar inscrições: {ex.Message}");
+                atividadesInscritas = new HashSet<int>();
             }
         }
-        catch (Exception ex)
+
+        private bool IsInscrito(int idAtividade) => atividadesInscritas.Contains(idAtividade);
+
+        private async Task OnCheckboxChanged(object? checkedValue, int idAtividade)
         {
-            Console.WriteLine($"Erro: {ex.Message}");
+            var isChecked = checkedValue is bool b && b;
+
+            if (isChecked && !IsInscrito(idAtividade))
+            {
+                await InscreverNaAtividade(idAtividade);
+            }
+            else if (!isChecked && IsInscrito(idAtividade))
+            {
+                await CancelarInscricaoAtividade(idAtividade);
+            }
+        }
+
+        private async Task InscreverNaAtividade(int idAtividade)
+        {
+            try
+            {
+                var response = await Http.PostAsJsonAsync("api/AtividadeParticipante/inscrever", new { IdAtividade = idAtividade });
+                if (response.IsSuccessStatusCode)
+                {
+                    atividadesInscritas.Add(idAtividade);
+                    StateHasChanged();
+                    Console.WriteLine("Inscrição realizada com sucesso!");
+                }
+                else
+                {
+                    Console.WriteLine($"Erro na inscrição: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro: {ex.Message}");
+            }
+        }
+
+        private async Task CancelarInscricaoAtividade(int idAtividade)
+        {
+            try
+            {
+                var response = await Http.DeleteAsync($"api/AtividadeParticipante/cancelar/{idAtividade}");
+                if (response.IsSuccessStatusCode)
+                {
+                    atividadesInscritas.Remove(idAtividade);
+                    StateHasChanged();
+                    Console.WriteLine("Cancelamento de inscrição realizado com sucesso!");
+                }
+                else
+                {
+                    Console.WriteLine($"Erro ao cancelar inscrição: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro: {ex.Message}");
+            }
+        }
+
+        private string FiltroCategoria
+        {
+            get => filtroCategoria;
+            set
+            {
+                filtroCategoria = value;
+                FiltrarEventos();
+            }
+        }
+
+        private string FiltroLocal
+        {
+            get => filtroLocal;
+            set
+            {
+                filtroLocal = value;
+                FiltrarEventos();
+            }
+        }
+
+        private DateTime? FiltroData
+        {
+            get => filtroData;
+            set
+            {
+                filtroData = value;
+                FiltrarEventos();
+            }
+        }
+
+        public class BilheteParticipanteEventoDto
+        {
+            public int IdBilhete { get; set; }
+            public Evento Evento { get; set; } = new();
+        }
+
+        public class AtividadeDto
+        {
+            public int Id { get; set; }
+            public string Nome { get; set; } = string.Empty;
+            public string Descricao { get; set; } = string.Empty;
+            public DateTime Data { get; set; }
+            public TimeSpan Hora { get; set; }
         }
     }
-
-    private string FiltroCategoria
-    {
-        get => filtroCategoria;
-        set
-        {
-            filtroCategoria = value;
-            FiltrarEventos();
-        }
-    }
-
-    private string FiltroLocal
-    {
-        get => filtroLocal;
-        set
-        {
-            filtroLocal = value;
-            FiltrarEventos();
-        }
-    }
-
-    private DateTime? FiltroData
-    {
-        get => filtroData;
-        set
-        {
-            filtroData = value;
-            FiltrarEventos();
-        }
-    }
-
-    public class BilheteParticipanteEventoDto
-    {
-        public int IdBilhete { get; set; }
-        public Evento Evento { get; set; } = new();
-    }
-
-    public class AtividadeDto
-    {
-        public int Id { get; set; }
-        public string Nome { get; set; } = string.Empty;
-        public string Descricao { get; set; } = string.Empty;
-        public DateTime Data { get; set; }
-        public TimeSpan Hora { get; set; }
-    }
-}
