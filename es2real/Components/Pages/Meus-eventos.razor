@@ -214,22 +214,28 @@
                 return;
             }
 
-            // Mostrar atividades e carregar se ainda não carregou
             if (!atividadesPorEvento.ContainsKey(idEvento))
             {
                 try
                 {
-                    var atividades = await Http.GetFromJsonAsync<List<AtividadeDto>>($"api/Eventos/{idEvento}/atividades") ?? new();
+                    // Updated endpoint to match AtividadeController
+                    var atividades = await Http.GetFromJsonAsync<List<AtividadeDto>>($"api/Atividade/evento/{idEvento}") ?? new();
+                    Console.WriteLine($"[DEBUG] Atividades carregadas para evento {idEvento}: {atividades.Count}");
+                    foreach (var a in atividades)
+                    {
+                        Console.WriteLine($"[DEBUG] Atividade - Id: {a.Id}, Nome: {a.Nome}, Data: {a.Data:dd/MM/yyyy}, Hora: {a.Hora}");
+                    }
                     atividadesPorEvento[idEvento] = atividades;
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Erro ao carregar atividades: {ex.Message}");
+                    Console.WriteLine($"Erro ao carregar atividades para evento {idEvento}: {ex.Message}");
                     atividadesPorEvento[idEvento] = new List<AtividadeDto>();
                 }
             }
 
             eventoAtividadesVisiveis.Add(idEvento);
+            StateHasChanged();
         }
 
         private async Task CarregarInscricoesAtividades()
