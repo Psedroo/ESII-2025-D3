@@ -5,17 +5,23 @@
 @inject NavigationManager Navigation
 @inject UserSessionService AuthStateProvider
 
-<h3></h3>
-
-
-
 @rendermode InteractiveServer
 
+<div class="container mt-5">
+    @if (AuthStateProvider.UsuarioAtual != null)
+    {
+        <div class="text-center mb-4">
+            <h2 class="fw-bold display-6">
+                <i class="bi bi-clipboard-data text-success me-2"></i>
+                Área do Organizador
+            </h2>
+            <p class="text-muted mb-1">
+                Bem-vindo, <strong>@AuthStateProvider.UsuarioAtual.Username</strong>
+            </p>
+            <p class="text-muted">Email: @AuthStateProvider.UsuarioAtual.Email</p>
+        </div>
 
-    <div class="container mt-5">
-        <h2 class="text-center">Área do Organizador</h2>
-
-        <div class="row mt-4 text-center">
+        <div class="row row-cols-1 row-cols-md-3 g-4 justify-content text-center">
             <div class="col-md-4">
                 <a href="/Eventos" class="btn btn-primary btn-lg w-100">Gerir Eventos</a>
             </div>
@@ -29,8 +35,12 @@
                 <a href="/Minhas-informacoes" class="btn btn-secondary btn-lg w-100">Minhas Informações</a>
             </div>
         </div>
-    </div>
-
+    }
+    else
+    {
+        <p class="text-danger text-center">Nenhum utilizador autenticado.</p>
+    }
+</div>
 
 @code {
     [Parameter]
@@ -42,7 +52,6 @@
 
         if (usuarioLogado == null || usuarioLogado.TipoUsuario != "Organizador")
         {
-            // Redirect to login if the user is not logged in or is not a 'Participante'
             Navigation.NavigateTo("/login");
         }
     }

@@ -49,3 +49,43 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+button {
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+button:hover {
+    transform: scale(1.03);
+    opacity: 0.95;
+}
+
+.alert-success {
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+    color: #0f5132;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(0,0,0,0.05);
+    transition: opacity 0.3s ease-in-out;
+}
+
+
+.nav-link.active {
+    background-color: #1b6ec2;
+    color: white !important;
+    font-weight: bold;
+    border-left: 4px solid white;
+    border-radius: 4px;
+}
+
+.nav-link {
+    transition: background-color 0.2s ease-in-out, transform 0.2s;
+}
+
+.nav-link:hover {
+    background-color: #155a9b;
+    color: white;
+    transform: translateX(4px);
+}
+
+

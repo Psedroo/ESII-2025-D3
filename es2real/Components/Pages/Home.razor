@@ -1,34 +1,36 @@
 ﻿@page "/"
-
 @using ES2Real.Components.Layout
-
-<script src="js/sessionHelper.js"></script>
-
-
-<BackButton />
-
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
 
+<BackButton />
 <PageTitle>Home</PageTitle>
 
-
 <!-- Hero Section -->
-<div class="jumbotron text-center">
-    <h1 class="display-4">Bem Vindo ao EventoHub!</h1>
-    <p class="lead">Descobre e organiza eventos sem qualquer esforço.</p>
+<div class="jumbotron text-center bg-light py-5 shadow-sm rounded">
+    <h1 class="display-4 mb-3">🎉 Bem-vindo ao EventoHub!</h1>
+    <p class="mb-4 fw-semibold fs-5 text-dark">
+        Descobre e organiza eventos sem qualquer esforço.
+    </p>
+    <a href="/login" class="btn btn-primary btn-lg">
+        <i class="bi bi-calendar-plus me-2"></i> Começar agora
+    </a>
 </div>
 
+<!-- Features Section -->
 <div class="row text-center mt-5">
-    <div class="col-md-4">
-        <h3>Criar Eventos</h3>
-        <p>Hospede e gerencie eventos com facilidade.</p>
+    <div class="col-md-4 mb-4">
+        <i class="bi bi-calendar-event fs-1 text-primary mb-2"></i>
+        <h4>Criar Eventos</h4>
+        <p>Hospeda e gerencia eventos com facilidade.</p>
     </div>
-    <div class="col-md-4">
-        <h3>Descobre encontros</h3>
-        <p>Encontra eventos incriveis a acontecer á tua beira.</p>
+    <div class="col-md-4 mb-4">
+        <i class="bi bi-geo-alt fs-1 text-danger mb-2"></i>
+        <h4>Descobre Encontros</h4>
+        <p>Encontra eventos incríveis perto de ti.</p>
     </div>
-    <div class="col-md-4">
-        <h3>Junta-te á comunidade</h3>
-        <p>Faz conexões com organizadores e outros participantes.</p>
+    <div class="col-md-4 mb-4">
+        <i class="bi bi-people fs-1 text-success mb-2"></i>
+        <h4>Junta-te à Comunidade</h4>
+        <p>Faz conexões com organizadores e participantes.</p>
     </div>
 </div>

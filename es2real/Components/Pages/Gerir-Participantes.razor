@@ -7,6 +7,8 @@
 @inject HttpClient Http
 @inject UserSessionService _userSessionService
 @rendermode InteractiveServer
+@inject IJSRuntime JS
+
 
 <BackButton />
 
@@ -41,7 +43,7 @@
                             <td class="px-4 py-2">@i.Email</td>
                             <td class="px-4 py-2">@i.Evento</td>
                             <td class="px-4 py-2">
-                                <button @onclick="() => RemoverParticipante(i.IdBilhete)"
+                                <button @onclick="() => ConfirmarRemocao(i.IdBilhete)"
                                         style="background-color: #e33636; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); font-weight: bold; cursor: pointer; border: none;">
                                     Remover
                                 </button>
@@ -56,6 +58,16 @@
 
 @code {
     private List<InscricaoViewModel>? inscricoes;
+    
+    private async Task ConfirmarRemocao(int idBilhete)
+    {
+        bool confirmado = await JS.InvokeAsync<bool>("confirm", "Tens a certeza que queres remover este participante?");
+        if (confirmado)
+        {
+            await RemoverParticipante(idBilhete);
+        }
+    }
+
 
     private class InscricaoViewModel
     {
