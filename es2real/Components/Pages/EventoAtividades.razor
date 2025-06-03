@@ -7,6 +7,7 @@
 @using ES2Real.Components.Layout
 @inject HttpClient Http
 @inject UserSessionService _userSessionService
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
 <BackButton />
@@ -304,55 +305,61 @@ else
     private async Task InscreverParticipante(int atividadeId)
     {
         var utilizador = _userSessionService.GetUsuario();
-        
-        Console.WriteLine((utilizador.Username));
-        
+
         // Buscar bilhetes associados ao evento
         var bilhetes = await Http.GetFromJsonAsync<List<Bilhete>>($"api/bilhete/evento/{id}");
 
         if (bilhetes == null || bilhetes.Count == 0)
         {
-            Console.WriteLine("Nenhum bilhete disponível para este evento.");
-            // Aqui poderias mostrar uma mensagem no UI se quiseres
+            await MostrarMensagem("Nenhum bilhete disponível para este evento.");
             return;
         }
 
         // Verificar se o utilizador tem bilhete para o evento
         var bilheteComParticipante = await Http.GetFromJsonAsync<List<BilheteParticipanteDto>>(
-            $"api/bilheteparticipante/participante/{utilizador.Id}");
+            $"api/BilheteParticipante/bilhetes/participante/{utilizador.Id}");
 
         var temBilheteParaEvento = bilheteComParticipante.Any(bp =>
             bilhetes.Any(b => b.Id == bp.IdBilhete && b.idEvento == id));
 
         if (!temBilheteParaEvento)
         {
-            Console.WriteLine("Participante não tem bilhete para este evento.");
-            // Aqui poderias redirecionar ou sugerir compra de bilhete
+            await MostrarMensagem("Você precisa comprar um bilhete para este evento antes de se inscrever em atividades.");
             return;
         }
 
-        // Criar inscrição (ajusta a entidade conforme a tua API)
+        // Criar inscrição
         var inscricao = new AtividadeParticipanteDto
         {
             IdAtividade = atividadeId,
             IdParticipante = utilizador.Id
         };
-        Console.WriteLine(atividadeId);
-        Console.WriteLine(utilizador.Username);
-        
+
         var response = await Http.PostAsJsonAsync("api/atividadeparticipante/inscrever", inscricao);
 
         if (response.IsSuccessStatusCode)
         {
-            Console.WriteLine("Inscrição realizada com sucesso.");
+            await MostrarMensagem("Inscrição realizada com sucesso!");
+
+            // Recarregar lista de atividades inscritas
+            await CarregarAtividadesInscritas();
+
+            // Forçar atualização do componente
+            StateHasChanged();
         }
         else
         {
-            Console.WriteLine($"Erro ao inscrever: {response.StatusCode}");
+            var erro = await response.Content.ReadAsStringAsync();
+            await MostrarMensagem($"Erro ao inscrever: {erro}");
         }
-        
-        StateHasChanged();
     }
+
+    
+    private async Task MostrarMensagem(string mensagem)
+    {
+        await JS.InvokeVoidAsync("alert", mensagem);
+    }
+
     
     public class BilheteParticipanteDto
     {
