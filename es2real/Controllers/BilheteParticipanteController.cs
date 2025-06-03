@@ -58,8 +58,9 @@
 
 
             // DELETE: api/BilheteParticipante/cancelar/5
-            [HttpDelete("cancelar/{idBilhete}")]
-            public IActionResult CancelarInscricao(int idBilhete)
+            [HttpDelete("remover/{idBilhete}")]
+            public IActionResult RemoverParticipante(int idBilhete)
+
             {
                 var registo = _context.BilheteParticipante
                     .FirstOrDefault(bp => bp.IdBilhete == idBilhete);

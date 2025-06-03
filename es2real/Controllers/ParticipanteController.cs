@@ -120,7 +120,8 @@ public class ParticipanteController : ControllerBase
                     ParticipanteId = bp.Participante.Id,
                     Nome = bp.Participante.Nome,
                     Email = bp.Participante.Utilizador.Email,
-                    Evento = bp.Bilhete.Evento.Nome
+                    Evento = bp.Bilhete.Evento.Nome,
+                    IdBilhete = bp.IdBilhete
                 })
                 .ToListAsync();
 
