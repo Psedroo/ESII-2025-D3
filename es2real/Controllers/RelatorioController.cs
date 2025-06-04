@@ -1,131 +1,141 @@
-﻿/*
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ES2Real.Data;
 using ES2Real.Models;
 
-[ApiController]
-[Route("api/[controller]")]
-public class RelatorioController : ControllerBase
+namespace ES2Real.Controllers
 {
-    private readonly ApplicationDbContext _context;
-
-    public RelatorioController(ApplicationDbContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class RelatorioController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    // GET: api/Relatorio/EventosSemRelatorio
-    [HttpGet("EventosSemRelatorio")]
-    public async Task<ActionResult<IEnumerable<Evento>>> GetEventosSemRelatorio()
-    {
-        var eventosComRelatorio = await _context.EventoRelatoriosEspecificos
-            .Select(er => er.IdEvento)
-            .ToListAsync();
-
-        var eventosSemRelatorio = await _context.Eventos
-            .Where(e => !eventosComRelatorio.Contains(e.Id))
-            .Include(e => e.Organizador)
-            .ToListAsync();
-
-        return Ok(eventosSemRelatorio);
-    }
-
-    // POST: api/Relatorio/GerarRelatorio/{eventoId}
-    [HttpPost("GerarRelatorio/{eventoId}")]
-    public async Task<ActionResult> GerarRelatorioEspecifico(int eventoId)
-    {
-        var evento = await _context.Eventos
-            .Include(e => e.EventoAtividades)
-            .Include(e => e.Bilhetes)
-                .ThenInclude(b => b.BilheteParticipante)
-            .FirstOrDefaultAsync(e => e.Id == eventoId);
-
-        if (evento == null)
+        public RelatorioController(ApplicationDbContext context)
         {
-            return NotFound("Evento não encontrado.");
+            _context = context;
         }
 
-        var relatorioExistente = await _context.EventoRelatoriosEspecificos
-            .AnyAsync(r => r.IdEvento == eventoId);
-        if (relatorioExistente)
+        [HttpGet("geral")]
+        public async Task<IActionResult> GetRelatorioGeral()
         {
-            return BadRequest("Relatório já existe para este evento.");
-        }
-
-        int totalParticipantes = evento.Bilhetes.Sum(b => b.BilheteParticipante.Count);
-        decimal receitaTotal = evento.Bilhetes.Sum(b => b.Preco * b.BilheteParticipante.Count);
-
-        var novoRelatorio = new RelatorioEspecifico
-        {
-            TotalParticipantes = totalParticipantes,
-            ReceitaTotal = receitaTotal,
-            DataCriacao = DateTime.UtcNow
-        };
-
-        _context.RelatoriosEspecificos.Add(novoRelatorio);
-        await _context.SaveChangesAsync();
-
-        var associacao = new Evento_RelatorioEspecifico
-        {
-            IdEvento = eventoId,
-            IdRelatorioEspecifico = novoRelatorio.Id
-        };
-        _context.EventoRelatoriosEspecificos.Add(associacao);
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            Mensagem = "Relatório específico gerado com sucesso.",
-            Relatorio = novoRelatorio
-        });
-    }
-
-    // GET: api/Relatorio/DetalhesRelatorio/{eventoId}
-    [HttpGet("DetalhesRelatorio/{eventoId}")]
-    public async Task<ActionResult> GetDetalhesRelatorio(int eventoId)
-    {
-        var evento = await _context.Eventos
-            .Include(e => e.EventoAtividades)
-                .ThenInclude(ea => ea.Atividade)
-            .Include(e => e.Bilhetes)
-                .ThenInclude(b => b.BilheteParticipante)
-            .FirstOrDefaultAsync(e => e.Id == eventoId);
-
-        if (evento == null)
-            return NotFound("Evento não encontrado.");
-
-        var participantesPorAtividade = evento.EventoAtividades.Select(ea => new
-        {
-            Atividade = ea.Atividade.Nome,
-            Participantes = ea.Atividade.Bilhetes?
-                .SelectMany(b => b.BilheteParticipante)
-                .Select(bp => bp.IdParticipante)
-                .Distinct()
-                .Count() ?? 0
-        });
-
-        decimal receitaTotal = evento.Bilhetes.Sum(b => b.Preco * b.BilheteParticipante.Count);
-        int totalParticipantes = evento.Bilhetes
-            .SelectMany(b => b.BilheteParticipante)
-            .Select(bp => bp.IdParticipante)
-            .Distinct()
-            .Count();
-
-        return Ok(new
-        {
-            Evento = new
+            try
             {
-                evento.Id,
-                evento.Nome,
-                evento.Local,
-                evento.Data,
-                evento.Hora,
-                evento.Categoria
-            },
-            ReceitaTotal = receitaTotal,
-            TotalParticipantes = totalParticipantes,
-            ParticipantesPorAtividade = participantesPorAtividade
-        });
+                var eventosPorCategoria = await _context.Eventos
+                    .GroupBy(e => e.Categoria)
+                    .Select(g => new { Categoria = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(g => g.Categoria, g => g.Count);
+
+                var eventos = await _context.Eventos.ToListAsync();
+                var topEventos = new List<(string Nome, int NumParticipantes)>();
+
+                foreach (var evento in eventos)
+                {
+                    var bilhetes = await _context.Bilhetes
+                        .Include(b => b.BilheteParticipante)
+                        .Where(b => b.idEvento == evento.Id)
+                        .ToListAsync();
+
+                    var numParticipantes = bilhetes
+                        .SelectMany(b => b.BilheteParticipante)
+                        .Select(bp => bp.IdParticipante)
+                        .Distinct()
+                        .Count();
+
+                    topEventos.Add((evento.Nome, numParticipantes));
+                }
+
+                var maisPopul = string.Join(", ", topEventos
+                    .OrderByDescending(e => e.NumParticipantes)
+                    .Take(5)
+                    .Select(e => $"{e.Nome} ({e.NumParticipantes})"));
+
+                var totalParticipantes = await _context.BilheteParticipante
+                    .Select(bp => bp.IdParticipante)
+                    .Distinct()
+                    .CountAsync();
+
+                var response = new
+                {
+                    EventosPorCategoria = eventosPorCategoria,
+                    MaisPopul = maisPopul,
+                    TotalPart = totalParticipantes
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao gerar relatório geral: {ex.Message}");
+            }
+        }
+
+        [HttpPost("geral")]
+        public async Task<IActionResult> CriarRelatorioGeral()
+        {
+            try
+            {
+                var eventosPorCategoria = await _context.Eventos
+                    .GroupBy(e => e.Categoria)
+                    .Select(g => new { Categoria = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(g => g.Categoria, g => g.Count);
+
+                var eventos = await _context.Eventos.ToListAsync();
+                var topEventos = new List<(string Nome, int NumParticipantes)>();
+
+                foreach (var evento in eventos)
+                {
+                    var bilhetes = await _context.Bilhetes
+                        .Include(b => b.BilheteParticipante)
+                        .Where(b => b.idEvento == evento.Id)
+                        .ToListAsync();
+
+                    var numParticipantes = bilhetes
+                        .SelectMany(b => b.BilheteParticipante)
+                        .Select(bp => bp.IdParticipante)
+                        .Distinct()
+                        .Count();
+
+                    topEventos.Add((evento.Nome, numParticipantes));
+                }
+
+                var maisPopul = string.Join(", ", topEventos
+                    .OrderByDescending(e => e.NumParticipantes)
+                    .Take(5)
+                    .Select(e => $"{e.Nome} ({e.NumParticipantes})"));
+
+                var totalParticipantes = await _context.BilheteParticipante
+                    .Select(bp => bp.IdParticipante)
+                    .Distinct()
+                    .CountAsync();
+
+                var relatorioGeral = new RelatorioGeral
+                {
+                    NumPorCat = eventosPorCategoria.Sum(c => c.Value),
+                    MaisPopul = maisPopul,
+                    TotalPart = totalParticipantes,
+                    IdRelatorio = 0,
+                    EventoRelatoriosGerais = new List<Evento_RelatorioGeral>()
+                };
+
+                foreach (var evento in eventos)
+                {
+                    relatorioGeral.EventoRelatoriosGerais.Add(new Evento_RelatorioGeral
+                    {
+                        IdEvento = evento.Id,
+                        RelatorioGeral = relatorioGeral
+                    });
+                }
+
+                _context.RelatoriosGerais.Add(relatorioGeral);
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Erro ao salvar relatório geral: {ex.Message}");
+            }
+        }
     }
 }
-*/

@@ -1,14 +1,58 @@
-﻿@*
-@page "/relatorios"
-
+﻿@page "/relatorios"
+@using Microsoft.EntityFrameworkCore
+@using System.Net.Http.Json
+@using ES2Real.Models
 @inject ApplicationDbContext _context
-@inject UserSessionService SessionService
-@inject NavigationManager Navigation
+@inject HttpClient Http
 
+<h3>Relatórios</h3>
 
-<h3>Criar Relatório Específico</h3>
+<h4>Relatório Geral de Eventos</h4>
+@if (generalReport == null)
+{
+    <p>Carregando relatório geral...</p>
+}
+else
+{
+    <div class="relatorio-geral mb-4">
+        <h5>Eventos por Categoria</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th>Número de Eventos</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var categoria in generalReport.EventosPorCategoria)
+                {
+                    <tr>
+                        <td>@categoria.Key</td>
+                        <td>@categoria.Value</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
 
-@if (eventosSemRelatorio is null)
+        <h5>Eventos Mais Populares</h5>
+        @if (string.IsNullOrEmpty(generalReport.MaisPopul))
+        {
+            <p>Nenhum evento com participantes encontrado.</p>
+        }
+        else
+        {
+            <p>@generalReport.MaisPopul</p>
+        }
+
+        <h5>Total de Participantes</h5>
+        <p>@generalReport.TotalPart participantes em todos os eventos.</p>
+
+        <button class="btn btn-success mb-3" @onclick="SalvarRelatorioGeral">Salvar Relatório Geral</button>
+    </div>
+}
+
+<h4>Criar Relatório Específico</h4>
+@if (eventosSemRelatorio == null)
 {
     <p>A carregar eventos...</p>
 }
@@ -45,63 +89,120 @@ else
 
 @code {
     private List<Evento> eventosSemRelatorio;
+    private GeneralReportResponse generalReport;
 
     protected override async Task OnInitializedAsync()
     {
-        // Buscar eventos sem relatório específico
-        eventosSemRelatorio = await _context.Eventos
-            .Where(e => !e.EventoRelatoriosEspecificos.Any())
-            .ToListAsync();
+        try
+        {
+            await CarregarEventosSemRelatorio();
+            await CarregarRelatorioGeral();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao inicializar relatórios: {ex.Message}");
+        }
+    }
+
+    private async Task CarregarEventosSemRelatorio()
+    {
+        try
+        {
+            eventosSemRelatorio = await _context.Eventos
+                .Where(e => !e.EventoRelatoriosEspecificos.Any())
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar eventos sem relatório: {ex.Message}");
+            eventosSemRelatorio = new List<Evento>();
+        }
+    }
+
+    private async Task CarregarRelatorioGeral()
+    {
+        try
+        {
+            generalReport = await Http.GetFromJsonAsync<GeneralReportResponse>("api/relatorio/geral");
+            if (generalReport == null)
+            {
+                generalReport = new GeneralReportResponse();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar relatório geral: {ex.Message}");
+            generalReport = new GeneralReportResponse();
+        }
     }
 
     private async Task CriarRelatorio(int eventoId)
     {
-        var evento = await _context.Eventos
-            .Include(e => e.EventoRelatoriosEspecificos)
-            .Include(e => e.Organizador)
-            .FirstOrDefaultAsync(e => e.Id == eventoId);
-
-        if (evento == null) return;
-
-        // Obter todos os bilhetes e participantes associados
-        var bilhetes = await _context.Bilhetes
-            .Where(b => b.idEvento == eventoId)
-            .Include(b => b.BilheteParticipante)
-            .ToListAsync();
-
-        int numParticipantes = bilhetes.Sum(b => b.BilheteParticipante.Count);
-        decimal receitaTotal = bilhetes.Sum(b => b.Preco * b.BilheteParticipante.Count);
-
-        // Criar entidades
-        var relatorio = new Relatorio
+        try
         {
-            Data = DateTime.Now,
-            Informacoes = $"Relatório gerado automaticamente para o evento '{evento.Nome}'."
-        };
+            var evento = await _context.Eventos
+                .FirstOrDefaultAsync(e => e.Id == eventoId);
 
-        var relatorioEspecifico = new RelatorioEspecifico
+            if (evento == null) return;
+
+            var bilhetes = await _context.Bilhetes
+                .Include(b => b.BilheteParticipante)
+                .Where(b => b.idEvento == eventoId)
+                .ToListAsync();
+            int numParticipantes = bilhetes
+                .SelectMany(b => b.BilheteParticipante)
+                .DistinctBy(bp => bp.IdParticipante)
+                .Count();
+            decimal receitaTotal = bilhetes.Sum(b => b.Preco * b.Quantidade);
+
+            var relatorioEspecifico = new RelatorioEspecifico
+            {
+                NumParticipantesAtiv = numParticipantes,
+                Receita = receitaTotal,
+                Feedback = "",
+                IdRelatorio = 0 // No Relatorio entity
+            };
+
+            relatorioEspecifico.EventoRelatoriosEspecificos.Add(new Evento_RelatorioEspecifico
+            {
+                IdEvento = eventoId,
+                RelatorioEspecifico = relatorioEspecifico
+            });
+
+            _context.RelatoriosEspecificos.Add(relatorioEspecifico);
+            await _context.SaveChangesAsync();
+            await CarregarEventosSemRelatorio();
+        }
+        catch (Exception ex)
         {
-            NumParticipantesAtiv = numParticipantes,
-            Receita = receitaTotal,
-            Feedback = "",
-            Relatorio = relatorio
-        };
+            Console.WriteLine($"Erro ao criar relatório específico: {ex.Message}");
+        }
+    }
 
-        relatorioEspecifico.EventoRelatoriosEspecificos.Add(new Evento_RelatorioEspecifico
+    private async Task SalvarRelatorioGeral()
+    {
+        try
         {
-            IdEvento = eventoId,
-            RelatorioEspecifico = relatorioEspecifico
-        });
+            var response = await Http.PostAsync("api/relatorio/geral", null);
+            if (response.IsSuccessStatusCode)
+            {
+                await CarregarRelatorioGeral();
+            }
+            else
+            {
+                Console.WriteLine($"Erro ao salvar relatório geral: {(int)response.StatusCode} {await response.Content.ReadAsStringAsync()}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao salvar relatório geral: {ex.Message}");
+        }
+    }
 
-        _context.Relatorios.Add(relatorio);
-        _context.RelatoriosEspecificos.Add(relatorioEspecifico);
-
-        await _context.SaveChangesAsync();
-
-        // Atualizar a lista após a criação
-        eventosSemRelatorio = await _context.Eventos
-            .Where(e => !e.EventoRelatoriosEspecificos.Any())
-            .ToListAsync();
+    private class GeneralReportResponse
+    {
+        public Dictionary<string, int> EventosPorCategoria { get; set; } = new();
+        public string MaisPopul { get; set; } = string.Empty;
+        public int TotalPart { get; set; }
     }
 }
-*@
