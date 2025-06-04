@@ -20,12 +20,12 @@ namespace ES2Real.Controllers
 
         // POST: api/Bilhete
         [HttpPost]
-        public ActionResult<Bilhete> CriarBilhete([FromBody] string tipo)
+        public ActionResult<Bilhete> CriarBilhete([FromBody] string tipo, decimal preco, int quantidadeBilheteNormal)
         {
             if (!Enum.TryParse<TipoBilhete>(tipo, out var tipoBilhete))
                 return BadRequest("Tipo de bilhete inválido.");
 
-            var bilhete = _service.CriarBilhete(tipoBilhete);
+            var bilhete = _service.CriarBilhete(tipoBilhete, preco, quantidadeBilheteNormal);
             return Ok(bilhete);
         }
 

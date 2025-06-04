@@ -26,25 +26,49 @@ namespace ES2Real.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Evento>> CriarEvento(Evento evento)
+        [HttpPost]
+        [HttpPost]
+        public async Task<ActionResult<Evento>> CriarEvento(EventoCriarDTO eventoDto)
         {
-            evento.Data = DateTime.SpecifyKind(evento.Data, DateTimeKind.Utc);
-            _context.Eventos.Add(evento);
-            await _context.SaveChangesAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var evento = new Evento
+                {
+                    Nome = eventoDto.Nome,
+                    Categoria = eventoDto.Categoria,
+                    Data = DateTime.SpecifyKind(eventoDto.Data, DateTimeKind.Utc),
+                    Hora = eventoDto.Hora,
+                    Local = eventoDto.Local,
+                    Descricao = eventoDto.Descricao,
+                    CapacidadeMax = eventoDto.CapacidadeMax,
+                    IdOrganizador = eventoDto.IdOrganizador
+                };
 
-            // Criar bilhetes associados
-            var bilheteNormal = _bilheteService.CriarBilhete(TipoBilhete.Normal);
-            var bilheteVip = _bilheteService.CriarBilhete(TipoBilhete.VIP);
+                _context.Eventos.Add(evento);
+                await _context.SaveChangesAsync();
+                
 
-            // Associa manualmente o evento (caso uses navegação)
-            bilheteNormal.idEvento = evento.Id;
-            bilheteVip.idEvento = evento.Id; 
+                var bilheteNormal = _bilheteService.CriarBilhete(TipoBilhete.Normal, eventoDto.PrecoBilheteNormal, eventoDto.QuantidadeBilheteNormal);
+                bilheteNormal.Evento = evento;
+                _context.Bilhetes.Add(bilheteNormal);
+                
 
-            _context.Bilhetes.AddRange(bilheteNormal, bilheteVip);
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetEventos), new { id = evento.Id }, evento);
+                await transaction.CommitAsync();
+                return CreatedAtAction(nameof(GetEventos), new { id = evento.Id }, evento);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                Console.WriteLine($"Erro ao criar evento: {ex.Message}");
+                return StatusCode(500, $"Erro interno ao criar evento: {ex.Message}");
+            }
         }
+
+
+
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> RemoverEvento(int id)
@@ -81,4 +105,20 @@ namespace ES2Real.Controllers
             return NoContent();
         }
     }
+    
+    public class EventoCriarDTO
+    {
+        public string Nome { get; set; } = string.Empty;
+        public string Categoria { get; set; } = string.Empty;
+        public DateTime Data { get; set; }
+        public TimeSpan Hora { get; set; }
+        public string Local { get; set; } = string.Empty;
+        public string Descricao { get; set; } = string.Empty;
+        public int CapacidadeMax { get; set; }
+        public int IdOrganizador { get; set; }
+        public decimal PrecoBilheteNormal { get; set; }  // só aqui, no DTO
+        public int QuantidadeBilheteNormal { get; set; }
+    }
+
+    
 }

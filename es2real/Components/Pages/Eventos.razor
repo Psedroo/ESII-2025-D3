@@ -2,6 +2,7 @@
 @using ES2Real.Components.Layout
 @inject UserSessionService userSessionService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 
 
@@ -55,6 +56,17 @@
             </div>
 
             <div class="mb-3">
+                <label class="form-label">Preço do Bilhete Normal</label>
+                <input type="number" class="form-control" @bind="eventoEditado.PrecoBilheteNormal" step="0.01" min="0" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Quantidade de bilhetes Normais</label>
+                <input type="number" @bind="eventoEditado.QuantidadeBilheteNormal" min="1" />
+            </div>
+            
+            
+            <div class="mb-3">
                 <label class="form-label">Capacidade Máxima</label>
                 <input type="number" class="form-control" @bind="eventoEditado.CapacidadeMax" />
             </div>
@@ -63,6 +75,13 @@
                 <button class="btn btn-primary" @onclick="SalvarEvento">Salvar Evento</button>
             </div>
         </div>
+        
+        @if (!string.IsNullOrEmpty(mensagemSucesso))
+        {
+            <div class="alert alert-success text-center mt-3" role="alert">
+                @mensagemSucesso
+            </div>
+        }
     }
 
     <div class="mt-4">
@@ -102,6 +121,8 @@
     private bool mostrarFormulario = false;
     private bool modoEdicao = false;
     private Evento eventoEditado = new();
+    private string? mensagemSucesso;
+    private bool jaRenderizou = false;
 
     // Use string properties for date and time inputs
     private string dataString = string.Empty;
@@ -110,6 +131,22 @@
     protected override async Task OnInitializedAsync()
     {
         await CarregarEventos();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jaRenderizou = true;
+
+            var msg = await JS.InvokeAsync<string>("localStorage.getItem", "mensagemSucesso");
+            if (!string.IsNullOrEmpty(msg))
+            {
+                mensagemSucesso = msg;
+                await JS.InvokeVoidAsync("localStorage.removeItem", "mensagemSucesso");
+                StateHasChanged();
+            }
+        }
     }
 
     private async Task CarregarEventos()
@@ -202,16 +239,28 @@
                 response = await Http.PostAsJsonAsync("api/evento", eventoEditado);
             }
 
-            if (response.IsSuccessStatusCode)
-            {
-                await CarregarEventos();
-                ToggleCriarEvento();
-            }
+        if (response.IsSuccessStatusCode)
+        {
+        mensagemSucesso = modoEdicao ? "Evento atualizado com sucesso!" : "Evento criado com sucesso!";
+        ToggleCriarEvento();
+        await CarregarEventos();
+
+        if (response.IsSuccessStatusCode)
+        {
+            mensagemSucesso = modoEdicao ? "Evento atualizado com sucesso!" : "Evento criado com sucesso!";
+            ToggleCriarEvento();
+            await CarregarEventos();
+            StateHasChanged(); // Force update of the UI
+        }
+
+        }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Erro ao salvar evento: {ex.Message}");
         }
+        
+        
     }
 
 
@@ -247,6 +296,8 @@
         public string Local { get; set; } = string.Empty;
         public string Descricao { get; set; } = string.Empty;
         public int CapacidadeMax { get; set; }
+        public decimal PrecoBilheteNormal { get; set; }
+        public int QuantidadeBilheteNormal { get; set; }
         public int IdOrganizador { get; set; }
     }
 

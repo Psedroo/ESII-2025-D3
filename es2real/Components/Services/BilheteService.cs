@@ -14,14 +14,14 @@ namespace ES2Real.Components.Services
             _context = context;
         }
 
-        public Bilhete CriarBilhete(TipoBilhete tipo)
+        public Bilhete CriarBilhete(TipoBilhete tipo, decimal preco, int quantidadeBilheteNormal)
         {
-            var factory = BilheteFactory.GetFactory(tipo); // usa factory method
+            var factory = BilheteFactory.GetFactory(tipo); // Usa factory method
             var bilhete = factory.CriarBilhete();
+            bilhete.Preco = preco; // Set the ticket price
+            bilhete.Quantidade = quantidadeBilheteNormal;
 
-            _context.Bilhetes.Add(bilhete);
-            _context.SaveChanges();
-
+            // Do NOT add to context or save here; let the controller handle it
             return bilhete;
         }
 
