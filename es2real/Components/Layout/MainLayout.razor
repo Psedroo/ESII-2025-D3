@@ -1,10 +1,7 @@
 ﻿@using ES2Real.Data
-@using Microsoft.AspNetCore.Components.Authorization
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
-@using Microsoft.AspNetCore.Components.Authorization
-@inject AuthenticationStateProvider AuthStateProvider
-
+@inject UserSessionService UserSession
 
 
 <div class="page">
@@ -26,37 +23,25 @@
     </main>
 </div>
 
-
 @code {
     private bool estaAutenticado = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        AuthStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
-
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        estaAutenticado = authState.User.Identity?.IsAuthenticated ?? false;
+        AtualizarEstadoAutenticacao();
     }
 
-    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    private void AtualizarEstadoAutenticacao()
     {
-        var authState = await task;
-        estaAutenticado = authState.User.Identity?.IsAuthenticated ?? false;
-
-        if (!estaAutenticado)
-        {
-            Navigation.NavigateTo("/login", true);
-        }
-
-        StateHasChanged(); // força a UI a atualizar
+        estaAutenticado = UserSession.UsuarioAtual != null;
     }
-
 
     private void TerminarSessao()
     {
-        if (AuthStateProvider is CustomAuthStateProvider custom)
-        {
-            custom.Logout();
-        }
+        Console.WriteLine("clique");
+        UserSession.Logout();
+        AtualizarEstadoAutenticacao();
+        StateHasChanged(); // <-- Atualiza o layout
+        Navigation.NavigateTo("/", forceLoad: true); // <-- recarrega completamente
     }
 }

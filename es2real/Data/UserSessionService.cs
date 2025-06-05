@@ -3,7 +3,6 @@
     private UtilizadorAuth? _usuarioLogado;
 
     public UtilizadorAuth? UsuarioAtual => _usuarioLogado;
-
     public void SetUsuario(UtilizadorAuth usuario)
     {
         _usuarioLogado = usuario;

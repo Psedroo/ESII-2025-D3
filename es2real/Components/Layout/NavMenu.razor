@@ -1,12 +1,13 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using ES2Real.Data
+@inject UserSessionService UserSession
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Gestão de Eventos</a>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="">
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
@@ -14,16 +15,78 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/login">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Login
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/users">
-                <i class="bi bi-people-fill me-2"></i> Utilizadores
-            </NavLink>
-        </div>
+        @if (UserSession.UsuarioAtual == null)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/login">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Login
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/users">
+                    <i class="bi bi-people-fill me-2"></i> Utilizadores
+                </NavLink>
+            </div>
+        }
+        else if (UserSession.UsuarioAtual.TipoUsuario == "Participante")
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Participante">
+                    <i class="bi bi-ticket-fill me-2"></i> Área Participante
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="@($"/Inscricoes/{UserSession.UsuarioAtual.Id}")">
+                    <i class="bi bi-ticket-fill me-2"></i> Inscrições
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Minhas-informacoes">
+                    <i class="bi bi-person-fill me-2"></i> Minhas Informações
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Meus-eventos">
+                    <i class="bi bi-calendar-event-fill me-2"></i> Meus Eventos
+                </NavLink>
+            </div>
+        }
+        else if (UserSession.UsuarioAtual.TipoUsuario == "Organizador")
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Organizador">
+                    <i class="bi bi-ticket-fill me-2"></i> Área Organizador
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Eventos">
+                    <i class="bi bi-calendar2-event-fill me-2"></i> Gerir Eventos
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Participantes">
+                    <i class="bi bi-people-fill me-2"></i> Gerir Participantes
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Relatorios">
+                    <i class="bi bi-file-earmark-bar-graph-fill me-2"></i> Relatórios
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/Minhas-informacoes">
+                    <i class="bi bi-person-fill me-2"></i> Minhas Informações
+                </NavLink>
+            </div>
+        }
     </nav>
 </div>
+
+@code {
+    
+    
+    protected override void OnInitialized()
+    {
+        Console.WriteLine($"Usuário atual: {UserSession.UsuarioAtual?.Username}, Tipo: {UserSession.UsuarioAtual?.TipoUsuario}");
+    }
+}

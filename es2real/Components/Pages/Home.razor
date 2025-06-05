@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using ES2Real.Components.Layout
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
+@inject UserSessionService UserSession
 
 <BackButton />
 <PageTitle>Home</PageTitle>
@@ -34,3 +35,12 @@
         <p>Faz conexões com organizadores e participantes.</p>
     </div>
 </div>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        UserSession.Logout();
+    }
+    
+}

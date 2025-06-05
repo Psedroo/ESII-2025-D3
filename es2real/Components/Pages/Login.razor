@@ -69,6 +69,11 @@
     private UserLoginModel userModel { get; set; } = new();
     private string loginMessage = string.Empty;
     
+    protected override void OnInitialized()
+    {
+       AuthStateProvider.Logout();
+    }
+    
     // Método de Login
     private async Task HandleLogin()
     {
