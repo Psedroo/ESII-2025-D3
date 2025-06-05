@@ -76,7 +76,7 @@
                                                     <td>
                                                         <input type="checkbox" checked="@IsInscrito(atividade.Id)" 
                                                                @onchange="(e) => OnCheckboxChanged(e.Value, atividade.Id)" />
-                                                    </td>
+                                                    </td>   
                                                     <td>@atividade.Nome</td>
                                                     <td>@atividade.Descricao</td>
                                                     <td>@atividade.Data.ToString("dd/MM/yyyy")</td>
@@ -84,7 +84,7 @@
                                                     <td>
                                                         @if (IsInscrito(atividade.Id))
                                                         {
-                                                            <button class="btn btn-sm btn-warning" @onclick="() => CancelarInscricaoAtividade(atividade.Id)">Cancelar Inscrição</button>
+                                                            <button class="btn btn-sm btn-warning" @onclick="() => CancelarInscricaoAtividade(atividade.Id, UserSessionService.GetUsuario().Id)">Cancelar Inscrição</button>
                                                         }
                                                     </td>
                                                 </tr>
@@ -186,7 +186,7 @@
         {
             try
             {
-                var response = await Http.DeleteAsync($"api/BilheteParticipante/cancelar/{idBilhete}");
+                var response = await Http.DeleteAsync($"api/BilheteParticipante/remover/{idBilhete}");
                 if (response.IsSuccessStatusCode)
                 {
                     await CarregarEventos();
@@ -279,7 +279,7 @@
             }
             else if (!isChecked && IsInscrito(idAtividade))
             {
-                await CancelarInscricaoAtividade(idAtividade);
+                await CancelarInscricaoAtividade(idAtividade, UserSessionService.GetUsuario().Id);
             }
         }
 
@@ -305,11 +305,11 @@
             }
         }
 
-        private async Task CancelarInscricaoAtividade(int idAtividade)
+        private async Task CancelarInscricaoAtividade(int idAtividade, int idParticipante)
         {
             try
             {
-                var response = await Http.DeleteAsync($"api/AtividadeParticipante/cancelar/{idAtividade}");
+                var response = await Http.DeleteAsync($"api/AtividadeParticipante/cancelar/{idAtividade}?idParticipante={idParticipante}");
                 if (response.IsSuccessStatusCode)
                 {
                     atividadesInscritas.Remove(idAtividade);
@@ -326,6 +326,7 @@
                 Console.WriteLine($"Erro: {ex.Message}");
             }
         }
+
 
         private string FiltroCategoria
         {
