@@ -23,4 +23,7 @@ public class Evento
     public List<Evento_Atividade> EventoAtividades { get; set; } = new();
     public List<Evento_RelatorioEspecifico> EventoRelatoriosEspecificos { get; set; } = new();
     public List<Evento_RelatorioGeral> EventoRelatoriosGerais { get; set; } = new();
+    
+    public List<Mensagem> Mensagens { get; set; } = new();
+
 }

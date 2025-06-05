@@ -22,6 +22,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<RelatorioGeral> RelatoriosGerais { get; set; }
     public DbSet<UtilizadorAuth> UtilizadorAuth { get; set; }
     public DbSet<AtividadeParticipante> AtividadeParticipantes { get; set; }
+    public DbSet<Mensagem> Mensagens { get; set; } 
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -125,6 +127,12 @@ public class ApplicationDbContext : DbContext
             .HasOne(ap => ap.Participante)
             .WithMany(p => p.AtividadeParticipantes)
             .HasForeignKey(ap => ap.IdParticipante)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<Mensagem>()
+            .HasOne(m => m.Evento)
+            .WithMany(e => e.Mensagens)
+            .HasForeignKey(m => m.IdEvento)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
