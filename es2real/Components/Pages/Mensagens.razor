@@ -14,6 +14,24 @@
     <input class="form-control" placeholder="Pesquisar por Nome do Evento" @bind="filtroNome" @bind:event="oninput" />
 </div>
 
+@if (IsOrganizador)
+{
+    <div class="mb-3">
+        <h5>Adicionar Nova Mensagem</h5>
+        <div class="form-group">
+            <select class="form-control mb-2" @bind="novoEventoId">
+                <option value="0" disabled selected>Selecione um evento</option>
+                @foreach (var e in eventos)
+                {
+                    <option value="@e.Evento.Id">@e.Evento.Nome</option>
+                }
+            </select>
+            <textarea class="form-control mb-2" placeholder="Digite a mensagem" @bind="novaMensagemTexto"></textarea>
+            <button class="btn btn-success" @onclick="AdicionarMensagem" disabled="@(novoEventoId == 0 || string.IsNullOrWhiteSpace(novaMensagemTexto))">Adicionar</button>
+        </div>
+    </div>
+}
+
 <div class="mt-4">
     <ul class="list-group">
         @foreach (var e in eventosFiltrados)
@@ -39,7 +57,24 @@
                         <ul class="list-group list-group-flush">
                             @foreach (var mensagem in mensagens)
                             {
-                                <li class="list-group-item">@mensagem.Texto</li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    @if (IsOrganizador && mensagemEditandoId == mensagem.Id)
+                                    {
+                                        <div class="w-100">
+                                            <textarea class="form-control mb-2" @bind="mensagemEditandoTexto"></textarea>
+                                            <button class="btn btn-success btn-sm" @onclick="() => SalvarEdicaoMensagem(mensagem.Id)">Salvar</button>
+                                            <button class="btn btn-secondary btn-sm" @onclick="CancelarEdicaoMensagem">Cancelar</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span>@mensagem.Texto</span>
+                                        @if (IsOrganizador)
+                                        {
+                                            <button class="btn btn-warning btn-sm" @onclick="() => IniciarEdicaoMensagem(mensagem.Id, mensagem.Texto)">Editar</button>
+                                        }
+                                    }
+                                </li>
                             }
                         </ul>
                     }
@@ -59,10 +94,22 @@
     private string filtroNome = string.Empty;
     private HashSet<int> eventoMensagensVisiveis = new();
     private Dictionary<int, List<MensagemDto>> mensagensPorEvento = new();
+    private bool IsOrganizador => UserSessionService.GetUsuario()?.TipoUsuario == "Organizador";
+    private int novoEventoId = 0;
+    private string novaMensagemTexto = string.Empty;
+    private int mensagemEditandoId = 0;
+    private string mensagemEditandoTexto = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        await CarregarEventos();
+        if (UserSessionService.GetUsuario().TipoUsuario == "Participante")
+        {
+            await CarregarEventos();
+        }
+        else
+        {
+            await CarregarEventosOrganizador();
+        }
     }
 
     private async Task CarregarEventos()
@@ -81,18 +128,34 @@
             Console.WriteLine($"[DEBUG] Carregando eventos para idParticipante: {idParticipante}");
             eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>($"api/BilheteParticipante/eventos/participante/{idParticipante}") ?? new List<BilheteParticipanteEventoDto>();
             Console.WriteLine($"[DEBUG] Eventos carregados: {eventos.Count}");
+            
 
-            if (eventos.Any())
+            FiltrarEventos();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
+            eventos = new List<BilheteParticipanteEventoDto>();
+            FiltrarEventos();
+        }
+    }
+    
+    private async Task CarregarEventosOrganizador()
+    {
+        try
+        {
+            var utilizador = UserSessionService.GetUsuario();
+            if (utilizador == null || utilizador.Id <= 0)
             {
-                foreach (var e in eventos)
-                {
-                    Console.WriteLine($"[DEBUG] Evento - IdBilhete: {e.IdBilhete}, Evento.Nome: {e.Evento.Nome}");
-                }
+                Console.WriteLine("Usuário não logado ou ID inválido.");
+                eventos = new List<BilheteParticipanteEventoDto>();
+                FiltrarEventos();
+                return;
             }
-            else
-            {
-                Console.WriteLine("[DEBUG] Lista de eventos está vazia.");
-            }
+            
+            int idOrganizador = utilizador.Id;
+            eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>($"api/BilheteParticipante/eventos/organizador/{idOrganizador}") ?? new List<BilheteParticipanteEventoDto>();
+            Console.WriteLine($"[DEBUG] Eventos carregados: {eventos.Count}");
 
             FiltrarEventos();
         }
@@ -124,7 +187,7 @@
         {
             try
             {
-                var mensagens = await Http.GetFromJsonAsync<List<MensagemDto>>($"api/Mensagem/evento/{idEvento}") ?? new();
+                var mensagens = await Http.GetFromJsonAsync<List<MensagemDto>>($"api/Mensagens/evento/{idEvento}") ?? new();
                 Console.WriteLine($"[DEBUG] Mensagens carregadas para evento {idEvento}: {mensagens.Count}");
                 foreach (var m in mensagens)
                 {
@@ -141,6 +204,77 @@
 
         eventoMensagensVisiveis.Add(idEvento);
         StateHasChanged();
+    }
+
+    private async Task AdicionarMensagem()
+    {
+        try
+        {
+            var novaMensagem = new MensagemDto { IdEvento = novoEventoId, Texto = novaMensagemTexto, IdOrganizador = UserSessionService.GetUsuario().Id};
+            var response = await Http.PostAsJsonAsync("api/Mensagens", novaMensagem);
+            if (response.IsSuccessStatusCode)
+            {
+                var mensagemCriada = await response.Content.ReadFromJsonAsync<MensagemDto>();
+                if (mensagemCriada != null)
+                {
+                    if (!mensagensPorEvento.ContainsKey(novoEventoId))
+                    {
+                        mensagensPorEvento[novoEventoId] = new List<MensagemDto>();
+                    }
+                    mensagensPorEvento[novoEventoId].Add(mensagemCriada);
+                    novaMensagemTexto = string.Empty;
+                    novoEventoId = 0;
+                    StateHasChanged();
+                    Console.WriteLine("Mensagem adicionada com sucesso!");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Erro ao adicionar mensagem: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro: {ex.Message}");
+        }
+    }
+
+    private void IniciarEdicaoMensagem(int id, string texto)
+    {
+        mensagemEditandoId = id;
+        mensagemEditandoTexto = texto;
+    }
+
+    private async Task SalvarEdicaoMensagem(int id)
+    {
+        try
+        {
+            var mensagemAtualizada = new MensagemDto { Id = id, Texto = mensagemEditandoTexto, IdEvento = mensagensPorEvento.Values.SelectMany(m => m).First(m => m.Id == id).IdEvento };
+            var response = await Http.PutAsJsonAsync($"api/Mensagens/{id}", mensagemAtualizada);
+            if (response.IsSuccessStatusCode)
+            {
+                var mensagem = mensagensPorEvento.Values.SelectMany(m => m).First(m => m.Id == id);
+                mensagem.Texto = mensagemEditandoTexto;
+                mensagemEditandoId = 0;
+                mensagemEditandoTexto = string.Empty;
+                StateHasChanged();
+                Console.WriteLine("Mensagem editada com sucesso!");
+            }
+            else
+            {
+                Console.WriteLine($"Erro ao editar mensagem: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro: {ex.Message}");
+        }
+    }
+
+    private void CancelarEdicaoMensagem()
+    {
+        mensagemEditandoId = 0;
+        mensagemEditandoTexto = string.Empty;
     }
 
     private string FiltroNome
@@ -170,5 +304,6 @@
         public int Id { get; set; }
         public string Texto { get; set; } = string.Empty;
         public int IdEvento { get; set; }
+        public int IdOrganizador { get; set; }
     }
 }
