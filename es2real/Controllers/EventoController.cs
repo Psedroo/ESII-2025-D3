@@ -104,6 +104,23 @@ namespace ES2Real.Controllers
 
             return NoContent();
         }
+        
+        [HttpGet("participante/{idUtilizador}")]
+        public async Task<ActionResult<List<Evento>>> GetEventosPorParticipante(int idUtilizador)
+        {
+            var eventos = await _context.BilheteParticipante
+                .Include(bp => bp.Bilhete)
+                .ThenInclude(b => b.Evento)
+                .Where(bp => bp.IdParticipante == idUtilizador)
+                .Select(bp => bp.Bilhete.Evento)
+                .Distinct()
+                .ToListAsync();
+
+            return eventos;
+        }
+
+
+
     }
     
     public class EventoCriarDTO

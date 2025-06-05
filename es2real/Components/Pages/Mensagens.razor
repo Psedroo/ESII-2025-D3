@@ -1,56 +1,174 @@
-﻿@page "/users"
+﻿@page "/Mensagens"
 
 @using ES2Real.Components.Layout
+@using System.Net.Http.Json
+@inject UserSessionService UserSessionService
+@rendermode InteractiveServer
+@inject HttpClient Http
 
-<h3></h3>
+<h3>Mensagens</h3>
 
 <BackButton />
 
+<div class="mb-3">
+    <input class="form-control" placeholder="Pesquisar por Nome do Evento" @bind="filtroNome" @bind:event="oninput" />
+</div>
 
-@inject HttpClient Http
-@rendermode InteractiveServer
-
-<PageTitle>Users</PageTitle>
-
-<h1>Lista de Utilizadores</h1>
-
-@if (users == null)
-{
-    <p>Loading users...</p>
-}
-else if (users.Length == 0)
-{
-    <p>Não foram encontrados utilizadores.</p>
-}
-else
-{
-    <ul>
-        @foreach (var user in users)
+<div class="mt-4">
+    <ul class="list-group">
+        @foreach (var e in eventosFiltrados)
         {
-            <li>@user.Username</li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>@e.Evento.Nome</span>
+                <button class="btn btn-primary btn-sm" @onclick="() => ToggleMensagens(e.Evento.Id)">
+                    @if (eventoMensagensVisiveis.Contains(e.Evento.Id))
+                    {
+                        <span>-</span>
+                    }
+                    else
+                    {
+                        <span>+</span>
+                    }
+                </button>
+            </li>
+            @if (eventoMensagensVisiveis.Contains(e.Evento.Id))
+            {
+                <li class="list-group-item">
+                    @if (mensagensPorEvento.TryGetValue(e.Evento.Id, out var mensagens) && mensagens.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var mensagem in mensagens)
+                            {
+                                <li class="list-group-item">@mensagem.Texto</li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="p-2">Sem mensagens para este evento.</div>
+                    }
+                </li>
+            }
         }
     </ul>
-}
-
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <p class="text-danger">@errorMessage</p>
-}
+</div>
 
 @code {
-    UtilizadorAuth[] users;
-    string errorMessage;
+    private List<BilheteParticipanteEventoDto> eventos = new();
+    private List<BilheteParticipanteEventoDto> eventosFiltrados = new();
+    private string filtroNome = string.Empty;
+    private HashSet<int> eventoMensagensVisiveis = new();
+    private Dictionary<int, List<MensagemDto>> mensagensPorEvento = new();
 
     protected override async Task OnInitializedAsync()
     {
+        await CarregarEventos();
+    }
+
+    private async Task CarregarEventos()
+    {
         try
         {
-            users = await Http.GetFromJsonAsync<UtilizadorAuth[]>("api/usuario");
+            var utilizador = UserSessionService.GetUsuario();
+            if (utilizador == null || utilizador.Id <= 0)
+            {
+                Console.WriteLine("Usuário não logado ou ID inválido.");
+                eventos = new List<BilheteParticipanteEventoDto>();
+                FiltrarEventos();
+                return;
+            }
+            int idParticipante = utilizador.Id;
+            Console.WriteLine($"[DEBUG] Carregando eventos para idParticipante: {idParticipante}");
+            eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>($"api/BilheteParticipante/eventos/participante/{idParticipante}") ?? new List<BilheteParticipanteEventoDto>();
+            Console.WriteLine($"[DEBUG] Eventos carregados: {eventos.Count}");
+
+            if (eventos.Any())
+            {
+                foreach (var e in eventos)
+                {
+                    Console.WriteLine($"[DEBUG] Evento - IdBilhete: {e.IdBilhete}, Evento.Nome: {e.Evento.Nome}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("[DEBUG] Lista de eventos está vazia.");
+            }
+
+            FiltrarEventos();
         }
         catch (Exception ex)
         {
-            errorMessage = "Failed to load users. Please try again later.";
-            Console.WriteLine($"Error fetching users: {ex.Message}");
+            Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
+            eventos = new List<BilheteParticipanteEventoDto>();
+            FiltrarEventos();
         }
+    }
+
+    private void FiltrarEventos()
+    {
+        eventosFiltrados = eventos
+            .Where(e => string.IsNullOrWhiteSpace(filtroNome) || e.Evento.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private async Task ToggleMensagens(int idEvento)
+    {
+        if (eventoMensagensVisiveis.Contains(idEvento))
+        {
+            eventoMensagensVisiveis.Remove(idEvento);
+            StateHasChanged();
+            return;
+        }
+
+        if (!mensagensPorEvento.ContainsKey(idEvento))
+        {
+            try
+            {
+                var mensagens = await Http.GetFromJsonAsync<List<MensagemDto>>($"api/Mensagem/evento/{idEvento}") ?? new();
+                Console.WriteLine($"[DEBUG] Mensagens carregadas para evento {idEvento}: {mensagens.Count}");
+                foreach (var m in mensagens)
+                {
+                    Console.WriteLine($"[DEBUG] Mensagem - Id: {m.Id}, Texto: {m.Texto}");
+                }
+                mensagensPorEvento[idEvento] = mensagens;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao carregar mensagens para evento {idEvento}: {ex.Message}");
+                mensagensPorEvento[idEvento] = new List<MensagemDto>();
+            }
+        }
+
+        eventoMensagensVisiveis.Add(idEvento);
+        StateHasChanged();
+    }
+
+    private string FiltroNome
+    {
+        get => filtroNome;
+        set
+        {
+            filtroNome = value;
+            FiltrarEventos();
+        }
+    }
+
+    public class BilheteParticipanteEventoDto
+    {
+        public int IdBilhete { get; set; }
+        public Evento Evento { get; set; } = new();
+    }
+
+    public class Evento
+    {
+        public int Id { get; set; }
+        public string Nome { get; set; } = string.Empty;
+    }
+
+    public class MensagemDto
+    {
+        public int Id { get; set; }
+        public string Texto { get; set; } = string.Empty;
+        public int IdEvento { get; set; }
     }
 }
