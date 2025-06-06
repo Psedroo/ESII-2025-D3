@@ -86,7 +86,7 @@
                                                     <td>
                                                         @if (IsInscrito(atividade.Id))
                                                         {
-                                                            <button class="btn btn-sm btn-warning" @onclick="() => CancelarInscricaoAtividade(atividade.Id, UserSessionService.GetUsuario().Id)">Cancelar Inscrição</button>
+                                                            <button class="btn btn-sm btn-warning" @onclick="() => CancelarInscricaoAtividade(atividade.Id)">Cancelar Inscrição</button>
                                                         }
                                                     </td>
                                                 </tr>
@@ -245,7 +245,8 @@
         {
             try
             {
-                var utilizador = UserSessionService.GetUsuario();
+                var ut = UserSessionService.GetUsuario();
+                var utilizador = await UtilizadorService.ObterParticipantePorIdUtilizador(ut.Id);
                 if (utilizador == null || utilizador.Id <= 0)
                 {
                     Console.WriteLine("Usuário não logado ou ID inválido.");
@@ -282,7 +283,7 @@
             }
             else if (!isChecked && IsInscrito(idAtividade))
             {
-                await CancelarInscricaoAtividade(idAtividade, UserSessionService.GetUsuario().Id);
+                await CancelarInscricaoAtividade(idAtividade);
             }
         }
 
@@ -308,8 +309,12 @@
             }
         }
 
-        private async Task CancelarInscricaoAtividade(int idAtividade, int idParticipante)
+        private async Task CancelarInscricaoAtividade(int idAtividade)
         {
+            var utilizador = UserSessionService.GetUsuario();
+            var ut = await UtilizadorService.ObterParticipantePorIdUtilizador(utilizador.Id);
+            int idParticipante = ut.Id;
+            
             try
             {
                 var response = await Http.DeleteAsync($"api/AtividadeParticipante/cancelar/{idAtividade}?idParticipante={idParticipante}");
