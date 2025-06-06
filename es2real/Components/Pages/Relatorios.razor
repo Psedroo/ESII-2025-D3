@@ -1,10 +1,15 @@
 ﻿@page "/relatorios"
+@rendermode InteractiveServer
+@using ES2Real.Components.Layout
 @using Microsoft.EntityFrameworkCore
 @using System.Net.Http.Json
+@using System.Text.Json
 @using ES2Real.Models
 @inject ApplicationDbContext _context
 @inject HttpClient Http
+<h3></h3>
 
+<BackButton />
 <h3>Relatórios</h3>
 
 <h4>Relatório Geral de Eventos</h4>
@@ -18,19 +23,19 @@ else
         <h5>Eventos por Categoria</h5>
         <table class="table table-bordered">
             <thead>
-                <tr>
-                    <th>Categoria</th>
-                    <th>Número de Eventos</th>
-                </tr>
+            <tr>
+                <th>Categoria</th>
+                <th>Número de Eventos</th>
+            </tr>
             </thead>
             <tbody>
-                @foreach (var categoria in generalReport.EventosPorCategoria)
-                {
-                    <tr>
-                        <td>@categoria.Key</td>
-                        <td>@categoria.Value</td>
-                    </tr>
-                }
+            @foreach (var categoria in generalReport.EventosPorCategoria)
+            {
+                <tr>
+                    <td>@categoria.Key</td>
+                    <td>@categoria.Value</td>
+                </tr>
+            }
             </tbody>
         </table>
 
@@ -51,51 +56,121 @@ else
     </div>
 }
 
-<h4>Criar Relatório Específico</h4>
-@if (eventosSemRelatorio == null)
+<h4>Relatórios Específicos por Evento</h4>
+@if (todosEventos == null)
 {
     <p>A carregar eventos...</p>
 }
-else if (!eventosSemRelatorio.Any())
+else if (!todosEventos.Any())
 {
-    <p>Todos os eventos já têm relatórios.</p>
+    <p>Não existem eventos disponíveis.</p>
 }
 else
 {
     <table class="table">
         <thead>
-            <tr>
-                <th>Nome do Evento</th>
-                <th>Data</th>
-                <th>Local</th>
-                <th></th>
-            </tr>
+        <tr>
+            <th>Nome do Evento</th>
+            <th>Data</th>
+            <th>Local</th>
+            <th></th>
+        </tr>
         </thead>
         <tbody>
-            @foreach (var evento in eventosSemRelatorio)
-            {
-                <tr>
-                    <td>@evento.Nome</td>
-                    <td>@evento.Data.ToShortDateString()</td>
-                    <td>@evento.Local</td>
-                    <td>
-                        <button class="btn btn-primary" @onclick="() => CriarRelatorio(evento.Id)">Criar Relatório</button>
-                    </td>
-                </tr>
-            }
+        @foreach (var evento in todosEventos)
+        {
+            var temRelatorio = evento.EventoRelatoriosEspecificos.Any();
+
+            <tr>
+                <td>@evento.Nome</td>
+                <td>@evento.Data.ToShortDateString()</td>
+                <td>@evento.Local</td>
+                <td>
+                    <button class="btn @(temRelatorio ? "btn-warning" : "btn-primary")"
+                            @onclick="() => AbrirModal(evento.Id)">
+                        @(temRelatorio ? "Editar Relatório" : "Criar Relatório")
+                    </button>
+                </td>
+            </tr>
+        }
         </tbody>
     </table>
 }
 
+@if (modalAberto)
+{
+    <div class="modal-relatorio">
+        <h5>Guardar/Editar Relatório do Evento</h5>
+
+        <p><strong>Número total de participantes:</strong> @numParticipantes</p>
+
+        <label class="form-label">Participantes por Atividade</label>
+        <ul class="list-group mb-3">
+            @if (participantesAtividades.Any())
+            {
+                @foreach (var p in participantesAtividades)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        @p.NomeAtividade
+                        <span class="badge bg-primary rounded-pill">@p.NumParticipantes</span>
+                    </li>
+                }
+            }
+            else
+            {
+                <li class="list-group-item">Nenhuma atividade com participantes.</li>
+            }
+        </ul>
+
+        <label class="form-label">Receita Gerada (€)</label>
+        <input type="number" step="0.01" class="form-control mb-2" @bind="receita" readonly />
+
+        <label class="form-label">Texto do Relatório</label>
+        <textarea class="form-control mb-3" rows="4" @bind="feedbackTexto" placeholder="Escreve aqui o texto do relatório..."></textarea>
+
+        <button class="btn btn-success me-2" @onclick="ConfirmarCriacaoRelatorio">Confirmar</button>
+        <button class="btn btn-secondary" @onclick="FecharModal">Cancelar</button>
+    </div>
+}
+
+<style>
+    .modal-relatorio {
+        background: white;
+        padding: 1.5rem;
+        border: 1px solid #ccc;
+        border-radius: 12px;
+        box-shadow: 0px 0px 15px rgba(0,0,0,0.3);
+        position: fixed;
+        top: 25%;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000;
+        width: 400px;
+        max-width: 90%;
+    }
+</style>
+
 @code {
-    private List<Evento> eventosSemRelatorio;
-    private GeneralReportResponse generalReport;
+    private List<Evento> todosEventos = new();
+    private GeneralReportResponse generalReport = new();
+    private int eventoIdSelecionado;
+    private string feedbackTexto = "";
+    private bool modalAberto = false;
+    private int numParticipantes = 0;
+    private decimal receita = 0;
+    private List<ParticipantesPorAtividade> participantesAtividades = new();
+
+    private class ParticipantesPorAtividade
+    {
+        public string NomeAtividade { get; set; } = string.Empty;
+        public int NumParticipantes { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            await CarregarEventosSemRelatorio();
+            await CarregarTodosEventos();
             await CarregarRelatorioGeral();
         }
         catch (Exception ex)
@@ -104,18 +179,20 @@ else
         }
     }
 
-    private async Task CarregarEventosSemRelatorio()
+    private async Task CarregarTodosEventos()
     {
         try
         {
-            eventosSemRelatorio = await _context.Eventos
-                .Where(e => !e.EventoRelatoriosEspecificos.Any())
+            todosEventos = await _context.Eventos
+                .Include(e => e.EventoRelatoriosEspecificos)
+                .ThenInclude(er => er.RelatorioEspecifico)
+                .ThenInclude(re => re.Relatorio)
                 .ToListAsync();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao carregar eventos sem relatório: {ex.Message}");
-            eventosSemRelatorio = new List<Evento>();
+            Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
+            todosEventos = new List<Evento>();
         }
     }
 
@@ -123,11 +200,7 @@ else
     {
         try
         {
-            generalReport = await Http.GetFromJsonAsync<GeneralReportResponse>("api/relatorio/geral");
-            if (generalReport == null)
-            {
-                generalReport = new GeneralReportResponse();
-            }
+            generalReport = await Http.GetFromJsonAsync<GeneralReportResponse>("api/relatorio/geral") ?? new GeneralReportResponse();
         }
         catch (Exception ex)
         {
@@ -136,46 +209,92 @@ else
         }
     }
 
-    private async Task CriarRelatorio(int eventoId)
+    private async void AbrirModal(int eventoId)
     {
+        eventoIdSelecionado = eventoId;
+        feedbackTexto = "";
+        numParticipantes = 0;
+        receita = 0;
+        participantesAtividades.Clear();
+
         try
         {
-            var evento = await _context.Eventos
-                .FirstOrDefaultAsync(e => e.Id == eventoId);
-
-            if (evento == null) return;
-
-            var bilhetes = await _context.Bilhetes
-                .Include(b => b.BilheteParticipante)
-                .Where(b => b.idEvento == eventoId)
-                .ToListAsync();
-            int numParticipantes = bilhetes
-                .SelectMany(b => b.BilheteParticipante)
-                .DistinctBy(bp => bp.IdParticipante)
-                .Count();
-            decimal receitaTotal = bilhetes.Sum(b => b.Preco * b.Quantidade);
-
-            var relatorioEspecifico = new RelatorioEspecifico
-            {
-                NumParticipantesAtiv = numParticipantes,
-                Receita = receitaTotal,
-                Feedback = "",
-                IdRelatorio = 0 // No Relatorio entity
-            };
-
-            relatorioEspecifico.EventoRelatoriosEspecificos.Add(new Evento_RelatorioEspecifico
-            {
-                IdEvento = eventoId,
-                RelatorioEspecifico = relatorioEspecifico
-            });
-
-            _context.RelatoriosEspecificos.Add(relatorioEspecifico);
-            await _context.SaveChangesAsync();
-            await CarregarEventosSemRelatorio();
+            numParticipantes = await Http.GetFromJsonAsync<int>($"api/relatorio/numero-participantes/{eventoId}");
+            receita = await Http.GetFromJsonAsync<decimal>($"api/relatorio/receita-evento/{eventoId}");
+            participantesAtividades = await Http.GetFromJsonAsync<List<ParticipantesPorAtividade>>($"api/relatorio/atividades-com-participantes/{eventoId}") ?? new();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao criar relatório específico: {ex.Message}");
+            Console.WriteLine($"Erro ao buscar dados do evento: {ex.Message}");
+        }
+
+        var evento = todosEventos.FirstOrDefault(e => e.Id == eventoId);
+        var rel = evento?.EventoRelatoriosEspecificos.FirstOrDefault()?.RelatorioEspecifico;
+
+        if (rel != null)
+        {
+            try
+            {
+                var json = await Http.GetStringAsync($"api/relatorio/texto-relatorio/{eventoId}");
+
+                try
+                {
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
+
+                    feedbackTexto = root.TryGetProperty("texto", out var textoElem) 
+                        ? textoElem.GetString() ?? "" 
+                        : "";
+                }
+                catch
+                {
+                    feedbackTexto = json;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao buscar texto do relatório: {ex.Message}");
+                feedbackTexto = "";
+            }
+        }
+
+        modalAberto = true;
+        StateHasChanged();
+    }
+
+    private void FecharModal()
+    {
+        modalAberto = false;
+        eventoIdSelecionado = 0;
+        feedbackTexto = "";
+        numParticipantes = 0;
+        receita = 0;
+        participantesAtividades.Clear();
+    }
+
+    private async Task ConfirmarCriacaoRelatorio()
+    {
+        try
+        {
+            var encodedTexto = Uri.EscapeDataString(feedbackTexto ?? "");
+            var response = await Http.PostAsync($"api/relatorio/gerar-especifico/{eventoIdSelecionado}?texto={encodedTexto}", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine("✅ Relatório criado/editado com sucesso!");
+                modalAberto = false;
+                await CarregarTodosEventos();
+            }
+            else
+            {
+                var erro = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("❌ Erro ao criar relatório: " + erro);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Erro inesperado: " + ex.Message);
         }
     }
 

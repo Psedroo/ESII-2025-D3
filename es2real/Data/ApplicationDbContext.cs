@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Evento_Atividade> EventoAtividades { get; set; }
     public DbSet<Organizador> Organizadores { get; set; }
     public DbSet<Participante> Participantes { get; set; }
+    public DbSet<Relatorio> Relatorio{ get; set; }
     public DbSet<RelatorioEspecifico> RelatoriosEspecificos { get; set; }
     public DbSet<RelatorioGeral> RelatoriosGerais { get; set; }
     public DbSet<UtilizadorAuth> UtilizadorAuth { get; set; }

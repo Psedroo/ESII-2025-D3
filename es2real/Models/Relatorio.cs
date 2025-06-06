@@ -6,5 +6,7 @@ public class Relatorio
     public int Id { get; set; }
     
     public DateTime Data { get; set; }
-    public string Informacoes { get; set; } = string.Empty;
+    
+    public string? Informacoes { get; set; } 
+
 }
