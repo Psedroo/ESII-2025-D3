@@ -6,7 +6,7 @@
     public void SetUsuario(UtilizadorAuth usuario)
     {
         _usuarioLogado = usuario;
-        Console.WriteLine(_usuarioLogado?.Email);
+        Console.WriteLine($" - Email: {_usuarioLogado?.Email}, Id: {_usuarioLogado?.Id}");
     }
 
     public void ClearUsuario()
@@ -29,5 +29,6 @@
         }
         return _usuarioLogado;
     }
+    
     
 }

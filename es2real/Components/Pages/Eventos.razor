@@ -3,6 +3,7 @@
 @inject UserSessionService userSessionService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
+@inject utilizadorService utilizadorService
 
 
 
@@ -221,11 +222,10 @@
         try
         {
             var usuarioLogado = userSessionService.GetUsuario(); // Obtém o usuário logado
-
-            if (usuarioLogado != null)
-            {
-                eventoEditado.IdOrganizador = usuarioLogado.Id; // Associa o organizador ao evento
-            }
+            var organizador = await utilizadorService.ObterOrganizadorPorIdUsuario(usuarioLogado.Id);
+            
+            eventoEditado.IdOrganizador = organizador.Id;
+            Console.WriteLine($" Id: {usuarioLogado?.Id}");
 
             eventoEditado.Data = DateTime.SpecifyKind(eventoEditado.Data, DateTimeKind.Utc);
             HttpResponseMessage response;

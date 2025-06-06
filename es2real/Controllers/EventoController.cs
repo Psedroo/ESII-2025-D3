@@ -24,7 +24,9 @@ namespace ES2Real.Controllers
         {
             return await _context.Eventos.ToListAsync();
         }
+        
 
+        
         [HttpPost]
         [HttpPost]
         [HttpPost]
@@ -44,6 +46,9 @@ namespace ES2Real.Controllers
                     CapacidadeMax = eventoDto.CapacidadeMax,
                     IdOrganizador = eventoDto.IdOrganizador
                 };
+                
+                Console.WriteLine($" Id: {eventoDto.IdOrganizador}");
+
 
                 _context.Eventos.Add(evento);
                 await _context.SaveChangesAsync();
@@ -133,7 +138,7 @@ namespace ES2Real.Controllers
         public string Descricao { get; set; } = string.Empty;
         public int CapacidadeMax { get; set; }
         public int IdOrganizador { get; set; }
-        public decimal PrecoBilheteNormal { get; set; }  // só aqui, no DTO
+        public decimal PrecoBilheteNormal { get; set; } 
         public int QuantidadeBilheteNormal { get; set; }
     }
 

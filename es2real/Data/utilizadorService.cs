@@ -120,7 +120,33 @@ public class utilizadorService
         
         return await response.Content.ReadFromJsonAsync<List<Organizador>>();
     }
+    
+    
+    public async Task<Organizador?> ObterOrganizadorPorIdUsuario(int idUsuario)
+    {
+        var organizadores = await ObterOrganizadores();
 
+        if (organizadores == null)
+        {
+            Console.WriteLine("Erro: não foi possível obter a lista de organizadores.");
+            return null;
+        }
+
+        return organizadores.FirstOrDefault(o => o.IdUsuario == idUsuario);
+    }
+
+    public async Task<Participante?> ObterParticipantePorIdUtilizador(int idUtilizador)
+    {
+        var participantes = await ObterParticipantes();
+
+        if (participantes == null)
+        {
+            Console.WriteLine("Erro: não foi possível obter a lista de participantes.");
+            return null;
+        }
+
+        return participantes.FirstOrDefault(p => p.IdUtilizador == idUtilizador);
+    }
     
 
     

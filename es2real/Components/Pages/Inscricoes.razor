@@ -3,6 +3,8 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
 @inject ApplicationDbContext Db
+@inject utilizadorService utilizadorService
+@inject UserSessionService userSessionService
 
 <h3>Eventos Disponíveis</h3>
 
@@ -130,6 +132,7 @@ else
     private int eventoSelecionadoId;
     private List<Bilhete> bilhetesDisponiveis = new();
     private int bilheteSelecionadoId;
+    private int idParticipante;
 
     private bool PodeConfirmar => bilheteSelecionadoId > 0;
 
@@ -152,10 +155,25 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        eventos = await Db.Eventos
-            .OrderBy(e => e.Data)
-            .ToListAsync();
+        eventos = await Db.Eventos.OrderBy(e => e.Data).ToListAsync();
+
+        var utilizador = userSessionService.GetUsuario();
+        if (utilizador == null)
+        {
+            Console.WriteLine("Utilizador não autenticado.");
+            return;
+        }
+
+        var participante = await utilizadorService.ObterParticipantePorIdUtilizador(utilizador.Id);
+        if (participante == null)
+        {
+            Console.WriteLine("Participante não encontrado.");
+            return;
+        }
+
+        idParticipante = participante.Id;
     }
+
 
     private async Task ComprarBilhete(int eventoId)
     {
@@ -171,7 +189,7 @@ else
     {
         var novoRegisto = new Bilhete_Participante
         {
-            IdParticipante = id,
+            IdParticipante = idParticipante,
             IdBilhete = bilheteSelecionadoId
         };
 
