@@ -10,38 +10,8 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            @if (estaAutenticado)
-            {
-                <button class="btn btn-lg px-5" @onclick="TerminarSessao">Terminar Sessão</button>
-            }
-        </div>
-
         <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
-
-@code {
-    private bool estaAutenticado = false;
-
-    protected override void OnInitialized()
-    {
-        AtualizarEstadoAutenticacao();
-    }
-
-    private void AtualizarEstadoAutenticacao()
-    {
-        estaAutenticado = UserSession.UsuarioAtual != null;
-    }
-
-    private void TerminarSessao()
-    {
-        Console.WriteLine("clique");
-        UserSession.Logout();
-        AtualizarEstadoAutenticacao();
-        StateHasChanged(); // <-- Atualiza o layout
-        Navigation.NavigateTo("/", forceLoad: true); // <-- recarrega completamente
-    }
-}
