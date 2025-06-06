@@ -45,10 +45,11 @@ namespace ES2Real.ApiControllers
             return Ok(atividades);
         }
 
-        // GET: api/AtividadeParticipante/participante/5
         [HttpGet("participante/{idParticipante}")]
         public async Task<ActionResult<List<AtividadeParticipanteDto>>> GetAtividadesDoParticipante(int idParticipante)
         {
+            Console.WriteLine($"🔍 ID do utilizador: {idParticipante}");
+    
             var inscricoes = await _context.AtividadeParticipantes
                 .Where(ap => ap.IdParticipante == idParticipante)
                 .Select(ap => new AtividadeParticipanteDto
@@ -58,11 +59,9 @@ namespace ES2Real.ApiControllers
                 })
                 .ToListAsync();
 
-            if (inscricoes == null || inscricoes.Count == 0)
-                return NotFound();
-
-            return Ok(inscricoes);
+            return Ok(inscricoes); // ← SEM verificação do Count
         }
+
 
         // POST: api/AtividadeParticipante/inscrever
         [HttpPost("inscrever")]

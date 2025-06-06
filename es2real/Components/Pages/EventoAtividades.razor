@@ -7,6 +7,8 @@
 @using ES2Real.Components.Layout
 @inject HttpClient Http
 @inject UserSessionService _userSessionService
+@inject utilizadorService UtilizadorService
+
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
@@ -128,8 +130,11 @@ else
     
     private async Task CarregarAtividadesInscritas()
     {
-        var utilizador = _userSessionService.GetUsuario();
-
+        var ut = _userSessionService.GetUsuario();
+        var utilizador = await UtilizadorService.ObterParticipantePorIdUtilizador(ut.Id);
+        
+        Console.WriteLine($"🔍 ID do utilizador: {utilizador?.Id}");
+        
         var inscricoes = await Http.GetFromJsonAsync<List<AtividadeParticipanteDto>>(
             $"api/atividadeparticipante/participante/{utilizador.Id}");
 
@@ -305,8 +310,9 @@ else
     
     private async Task InscreverParticipante(int atividadeId)
     {
-        var utilizador = _userSessionService.GetUsuario();
-
+        var ut = _userSessionService.GetUsuario();
+        var utilizador = await UtilizadorService.ObterParticipantePorIdUtilizador(ut.Id);
+        
         // Buscar bilhetes associados ao evento
         var bilhetes = await Http.GetFromJsonAsync<List<Bilhete>>($"api/bilhete/evento/{id}");
 

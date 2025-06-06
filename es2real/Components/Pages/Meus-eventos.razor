@@ -3,6 +3,8 @@
     @using ES2Real.Components.Layout
     @using System.Net.Http.Json
     @inject UserSessionService UserSessionService
+    @inject utilizadorService UtilizadorService
+
     @rendermode InteractiveServer
     @inject HttpClient Http
 
@@ -131,7 +133,8 @@
         {
             try
             {
-                var utilizador = UserSessionService.GetUsuario();
+                var ut = UserSessionService.GetUsuario();
+                var utilizador = await UtilizadorService.ObterParticipantePorIdUtilizador(ut.Id);
                 if (utilizador == null || utilizador.Id <= 0)
                 {
                     Console.WriteLine("Usuário não logado ou ID inválido.");
