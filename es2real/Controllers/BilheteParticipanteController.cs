@@ -57,34 +57,6 @@
                 return Ok(eventos);
             }
             
-            
-            [HttpGet("eventos/organizador/{idOrganizador}")]
-            public async Task<ActionResult<IEnumerable<BilheteParticipanteEventoDto>>> GetEventosDoOrganizador(int idOrganizador)
-            {
-                var eventos = await _context.BilheteParticipante
-                    .Include(bp => bp.Bilhete)
-                    .ThenInclude(b => b.Evento)
-                    .Where(bp => bp.Bilhete != null &&
-                                 bp.Bilhete.Evento != null &&
-                                 bp.Bilhete.Evento.IdOrganizador == idOrganizador)
-                    .Select(bp => new BilheteParticipanteEventoDto
-                    {
-                        IdBilhete = bp.IdBilhete,
-                        Evento = new EventoDto
-                        {
-                            Id = bp.Bilhete.Evento.Id,
-                            Nome = bp.Bilhete.Evento.Nome,
-                            Data = bp.Bilhete.Evento.Data,
-                            Local = bp.Bilhete.Evento.Local,
-                            Categoria = bp.Bilhete.Evento.Categoria
-                        }
-                    })
-                    .ToListAsync();
-
-                return Ok(eventos);
-            }
-
-
 
             [HttpDelete("remover/{idBilhete}")]
             public IActionResult RemoverParticipante(int idBilhete)

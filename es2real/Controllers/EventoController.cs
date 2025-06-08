@@ -28,8 +28,6 @@ namespace ES2Real.Controllers
 
         
         [HttpPost]
-        [HttpPost]
-        [HttpPost]
         public async Task<ActionResult<Evento>> CriarEvento(EventoCriarDTO eventoDto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -123,8 +121,19 @@ namespace ES2Real.Controllers
 
             return eventos;
         }
+        
+        [HttpGet("organizador/{idOrganizador}")]
+        public async Task<ActionResult<List<Evento>>> GetEventosPorOrganizador(int idOrganizador)
+        {
+            var eventos = await _context.Eventos
+                .Where(e => e.IdOrganizador == idOrganizador)
+                .ToListAsync();
 
+            if (eventos == null || eventos.Count == 0)
+                return NotFound("Nenhum evento encontrado para este organizador.");
 
+            return eventos;
+        }
 
     }
     

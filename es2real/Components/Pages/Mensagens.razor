@@ -3,6 +3,7 @@
 @using ES2Real.Components.Layout
 @using System.Net.Http.Json
 @inject UserSessionService UserSessionService
+@inject utilizadorService UtilizadorService
 @rendermode InteractiveServer
 @inject HttpClient Http
 
@@ -11,7 +12,7 @@
 <BackButton />
 
 <div class="mb-3">
-    <input class="form-control" placeholder="Pesquisar por Nome do Evento" @bind="filtroNome" @bind:event="oninput" />
+    <input class="form-control" placeholder="Pesquisar por Nome do Evento" @bind="FiltroNome" @bind:event="oninput" />
 </div>
 
 @if (IsOrganizador)
@@ -21,9 +22,9 @@
         <div class="form-group">
             <select class="form-control mb-2" @bind="novoEventoId">
                 <option value="0" disabled selected>Selecione um evento</option>
-                @foreach (var e in eventos)
+                @foreach (var e in eventosOrg)
                 {
-                    <option value="@e.Evento.Id">@e.Evento.Nome</option>
+                    <option value="@e.Id">@e.Nome</option>
                 }
             </select>
             <textarea class="form-control mb-2" placeholder="Digite a mensagem" @bind="novaMensagemTexto"></textarea>
@@ -90,7 +91,10 @@
 
 @code {
     private List<BilheteParticipanteEventoDto> eventos = new();
+    private List<Evento> eventosOrg = new();
     private List<BilheteParticipanteEventoDto> eventosFiltrados = new();
+    private List<Evento> eventosFiltradosOrg = new();
+
     private string filtroNome = string.Empty;
     private HashSet<int> eventoMensagensVisiveis = new();
     private Dictionary<int, List<MensagemDto>> mensagensPorEvento = new();
@@ -116,7 +120,8 @@
     {
         try
         {
-            var utilizador = UserSessionService.GetUsuario();
+            var ut = UserSessionService.GetUsuario();
+            var utilizador = await UtilizadorService.ObterParticipantePorIdUtilizador(ut.Id);
             if (utilizador == null || utilizador.Id <= 0)
             {
                 Console.WriteLine("Usuário não logado ou ID inválido.");
@@ -124,6 +129,7 @@
                 FiltrarEventos();
                 return;
             }
+
             int idParticipante = utilizador.Id;
             Console.WriteLine($"[DEBUG] Carregando eventos para idParticipante: {idParticipante}");
             eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>($"api/BilheteParticipante/eventos/participante/{idParticipante}") ?? new List<BilheteParticipanteEventoDto>();
@@ -144,33 +150,51 @@
     {
         try
         {
-            var utilizador = UserSessionService.GetUsuario();
+            var ut = UserSessionService.GetUsuario();
+            var utilizador = await UtilizadorService.ObterOrganizadorPorIdUsuario(ut.Id);
             if (utilizador == null || utilizador.Id <= 0)
             {
                 Console.WriteLine("Usuário não logado ou ID inválido.");
-                eventos = new List<BilheteParticipanteEventoDto>();
+                eventosOrg = new List<Evento>();
+                eventos = new List<BilheteParticipanteEventoDto>(); // Adiciona isto
                 FiltrarEventos();
                 return;
             }
-            
+
             int idOrganizador = utilizador.Id;
-            eventos = await Http.GetFromJsonAsync<List<BilheteParticipanteEventoDto>>($"api/BilheteParticipante/eventos/organizador/{idOrganizador}") ?? new List<BilheteParticipanteEventoDto>();
-            Console.WriteLine($"[DEBUG] Eventos carregados: {eventos.Count}");
+            Console.WriteLine($"[DEBUG] Carregando eventos para idOrganizador: {idOrganizador}");
+
+            eventosOrg = await Http.GetFromJsonAsync<List<Evento>>($"api/evento/organizador/{idOrganizador}") ?? new List<Evento>();
+
+            Console.WriteLine($"[DEBUG] Eventos carregados: {eventosOrg.Count}");
+
+            // ✅ Preencher 'eventos' com estrutura esperada
+            eventos = eventosOrg.Select(e => new BilheteParticipanteEventoDto { Evento = e }).ToList();
 
             FiltrarEventos();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Erro ao carregar eventos: {ex.Message}");
-            eventos = new List<BilheteParticipanteEventoDto>();
-            FiltrarEventos();
+            eventosOrg = new List<Evento>();
+            eventos = new List<BilheteParticipanteEventoDto>(); // Adiciona isto
+            FiltrarEventosOrg();
         }
     }
+
+
 
     private void FiltrarEventos()
     {
         eventosFiltrados = eventos
             .Where(e => string.IsNullOrWhiteSpace(filtroNome) || e.Evento.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+    
+    private void FiltrarEventosOrg()
+    {
+        eventosFiltradosOrg = eventosOrg
+            .Where(e => string.IsNullOrWhiteSpace(filtroNome) || e.Nome.Contains(filtroNome, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
 
@@ -208,9 +232,11 @@
 
     private async Task AdicionarMensagem()
     {
+        var ut = UserSessionService.GetUsuario();
+        var utilizador = await UtilizadorService.ObterOrganizadorPorIdUsuario(ut.Id);
         try
         {
-            var novaMensagem = new MensagemDto { IdEvento = novoEventoId, Texto = novaMensagemTexto, IdOrganizador = UserSessionService.GetUsuario().Id};
+            var novaMensagem = new MensagemDto { IdEvento = novoEventoId, Texto = novaMensagemTexto, IdOrganizador = utilizador.Id};
             var response = await Http.PostAsJsonAsync("api/Mensagens", novaMensagem);
             if (response.IsSuccessStatusCode)
             {
@@ -292,13 +318,7 @@
         public int IdBilhete { get; set; }
         public Evento Evento { get; set; } = new();
     }
-
-    public class Evento
-    {
-        public int Id { get; set; }
-        public string Nome { get; set; } = string.Empty;
-    }
-
+        
     public class MensagemDto
     {
         public int Id { get; set; }

@@ -154,7 +154,11 @@
     {
         try
         {
-            eventos = await Http.GetFromJsonAsync<List<Evento>>("api/evento") ?? new List<Evento>();
+            var usuarioLogado = userSessionService.GetUsuario(); // Obtém o utilizador logado
+            var organizador = await utilizadorService.ObterOrganizadorPorIdUsuario(usuarioLogado.Id); // Obtém o organizador
+
+            eventos = await Http.GetFromJsonAsync<List<Evento>>($"api/evento/organizador/{organizador.Id}") 
+                      ?? new List<Evento>();
         }
         catch (Exception ex)
         {
@@ -162,6 +166,7 @@
             eventos = new List<Evento>();
         }
     }
+
 
     private void ToggleCriarEvento()
     {
