@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.OpenApi.Models; // Adicionado para o Swagger
+using System.Text.Json.Serialization; // ✅ Necessário para ReferenceHandler.IgnoreCycles
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,11 +27,17 @@ builder.Services.AddHttpClient("API", client =>
     client.BaseAddress = new Uri("https://localhost:44343/"); // Altere para o endereço correto da sua API
 });
 
-
-
 builder.Services.AddAuthorization();
 builder.Services.AddBlazoredLocalStorage();
-builder.Services.AddControllers();
+
+// ✅ Apenas esta linha substitui a anterior para evitar erro 500 (ciclos JSON)
+builder.Services.AddControllers()
+    .AddJsonOptions(opt =>
+    {
+        opt.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        opt.JsonSerializerOptions.WriteIndented = true;
+    });
+
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<utilizadorService>();
 builder.Services.AddScoped<BilheteService>();
@@ -47,8 +54,6 @@ builder.Services.AddBlazoredLocalStorage();
 
 builder.Services.AddScoped<ITipoUsuarioHandler, ParticipanteHandler>();
 builder.Services.AddScoped<ITipoUsuarioHandler, OrganizadorHandler>();
-
-
 
 // Add Swagger services
 builder.Services.AddEndpointsApiExplorer();

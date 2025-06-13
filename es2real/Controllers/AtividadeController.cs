@@ -58,19 +58,9 @@ namespace ES2Real.Controllers
             _context.Atividades.Add(atividade);
             await _context.SaveChangesAsync();
 
-            if (atividade.EventoAtividades != null && atividade.EventoAtividades.Any())
-            {
-                foreach (var relacao in atividade.EventoAtividades)
-                {
-                    relacao.IdAtividade = atividade.Id;
-                    _context.EventoAtividades.Add(relacao);
-                }
-
-                await _context.SaveChangesAsync();
-            }
-
             return CreatedAtAction(nameof(GetAtividade), new { id = atividade.Id }, atividade);
         }
+
 
         // PUT: api/Atividade/5
         [HttpPut("{id}")]
