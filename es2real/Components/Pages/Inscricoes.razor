@@ -6,7 +6,7 @@
 @inject utilizadorService utilizadorService
 @inject UserSessionService userSessionService
 
-<h3 id="titulo-eventos">Eventos Disponíveis</h3>
+<h3>Eventos Disponíveis</h3>
 
 <BackButton />
 
@@ -15,20 +15,20 @@
 <PageTitle>Inscricoes</PageTitle>
 
 <div class="search-bar">
-    <input id="input-filtro-nome" @bind="filtro" @bind:event="oninput" placeholder="Procurar por nome..." class="form-control me-2" />
-    <input id="input-filtro-categoria" @bind="filtroCategoria" @bind:event="oninput" placeholder="Categoria..." class="form-control me-2" />
-    <input id="input-filtro-local" @bind="filtroLocal" @bind:event="oninput" placeholder="Local..." class="form-control me-2" />
-    <input id="input-filtro-data" type="date" @bind="filtroData" class="form-control me-2" />
-    <button id="btn-pesquisar"><span class="lupa">&#128269;</span></button>
+    <input @bind="filtro" @bind:event="oninput" placeholder="Procurar por nome..." class="form-control me-2" />
+    <input @bind="filtroCategoria" @bind:event="oninput" placeholder="Categoria..." class="form-control me-2" />
+    <input @bind="filtroLocal" @bind:event="oninput" placeholder="Local..." class="form-control me-2" />
+    <input type="date" @bind="filtroData" class="form-control me-2" />
+    <button><span class="lupa">&#128269;</span></button>
 </div>
 
 @if (eventosFiltrados is null)
 {
-    <p id="carregando-eventos">Carregando eventos...</p>
+    <p>Carregando eventos...</p>
 }
 else if (!eventosFiltrados.Any())
 {
-    <p id="nenhum-evento">Nenhum evento encontrado.</p>
+    <p>Nenhum evento encontrado.</p>
 }
 else
 {
@@ -36,13 +36,13 @@ else
         @foreach (var evento in eventosFiltrados)
         {
             <div class="evento-card">
-                <h4 id="evento-@evento.Id">@evento.Nome</h4>
+                <h4>@evento.Nome</h4>
                 <p><strong>Categoria:</strong> @evento.Categoria</p>
                 <p><strong>Data:</strong> @evento.Data.ToString("dd/MM/yyyy")</p>
                 <p><strong>Hora:</strong> @evento.Hora</p>
                 <p><strong>Local:</strong> @evento.Local</p>
-                <button id="btn-comprar-@evento.Id" class="btn btn-info" @onclick="() => ComprarBilhete(evento.Id)">Comprar Bilhete</button>
-                <button id="btn-detalhes-@evento.Id" class="btn btn-primary" @onclick="() => IrParaDetalhes(evento.Id)">Ver Detalhes</button>
+                <button class="btn btn-info" @onclick="() => ComprarBilhete(evento.Id)">Comprar Bilhete</button>
+                <button class="btn btn-primary" @onclick="() => IrParaDetalhes(evento.Id)">Ver Detalhes</button>
             </div>
         }
     </div>
@@ -50,17 +50,17 @@ else
 
 @if (mostrarBilhetes)
 {
-    <div class="modal-bilhete" id="modal-bilhete">
+    <div class="modal-bilhete">
         <h4>Escolher Bilhete</h4>
-        <select id="selecionar-bilhete" @bind="bilheteSelecionadoId">
+        <select @bind="bilheteSelecionadoId">
             <option value="">-- Seleciona um bilhete --</option>
             @foreach (var b in bilhetesDisponiveis)
             {
                 <option value="@b.Id">@b.Tipo - @b.Descricao (@b.Quantidade disponíveis)</option>
             }
         </select>
-        <button id="btn-confirmar-compra" class="btn btn-success" @onclick="ConfirmarCompra" disabled="@(!PodeConfirmar)">Comprar</button>
-        <button id="btn-cancelar" class="btn btn-secondary" @onclick="() => mostrarBilhetes = false">Cancelar</button>
+        <button class="btn btn-success" @onclick="ConfirmarCompra" disabled="@(!PodeConfirmar)">Comprar</button>
+        <button class="btn btn-secondary" @onclick="() => mostrarBilhetes = false">Cancelar</button>
     </div>
 }
 
@@ -205,7 +205,7 @@ else
 
         mostrarBilhetes = false;
     }
-
+    
     private void IrParaDetalhes(int eventoId)
     {
         Navigation.NavigateTo($"/EventoAtividades/{eventoId}");
